@@ -1,0 +1,1352 @@
+<!DOCTYPE html>
+<html lang="vi" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Truyện Song Ngữ Anh Việt - Hành Trình Cảm Xúc</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts: Playfair Display for headings, Inter & Lora for reading -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400..700;1,400..700&family=Playfair+Display:ital,wght@0,400..900;1,400..900&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Alpine.js for lightweight state management -->
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+
+    <style>
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+        }
+        .serif-font {
+            font-family: 'Lora', serif;
+        }
+        .title-font {
+            font-family: 'Playfair Display', serif;
+        }
+        /* Page flip & custom transitions */
+        .page-transition {
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        [x-cloak] { display: none !important; }
+        
+        /* Premium custom scrollbars */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(156, 163, 175, 0.3);
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(156, 163, 175, 0.5);
+        }
+        .preserve-3d {
+            transform-style: preserve-3d;
+        }
+        .backface-hidden {
+            backface-visibility: hidden;
+        }
+    </style>
+</head>
+<body 
+    x-data="ebookApp()" 
+    x-init="initApp()"
+    :class="themes[currentTheme].bg + ' ' + themes[currentTheme].text" 
+    class="h-full flex flex-col overflow-hidden page-transition select-none"
+>
+
+    <header :class="themes[currentTheme].headerBg + ' ' + themes[currentTheme].border" class="border-b px-4 py-3 flex items-center justify-between z-10 shadow-sm shrink-0">
+        <div class="flex items-center space-x-3">
+            <button @click="showSidebar = true" class="p-2 rounded-lg hover:bg-black/5 dark:hover:bg-white/10 transition-colors" title="Mục lục">
+                <i data-lucide="menu" class="w-5 h-5"></i>
+            </button>
+            <div class="flex items-center space-x-2 cursor-pointer" @click="goToPage('cover')">
+                <span class="title-font font-bold text-lg md:text-xl text-indigo-600 dark:text-indigo-400">Hành Trình Cảm Xúc</span>
+                <span class="text-xs px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-800 dark:bg-indigo-900/50 dark:text-indigo-300 font-semibold hidden sm:inline-block">Song Ngữ</span>
+            </div>
+        </div>
+
+        <!-- Toolbar Options -->
+        <div class="flex items-center space-x-2 md:space-x-4">
+            <!-- Display Mode Selector (EN, VI, Parallel, Interleaved) -->
+            <div class="relative" x-data="{ open: false }">
+                <button @click="open = !open" class="flex items-center space-x-1.5 px-3 py-1.5 rounded-lg border text-xs font-semibold bg-white dark:bg-slate-800 hover:bg-gray-50 dark:hover:bg-slate-700 transition" :class="themes[currentTheme].border">
+                    <i data-lucide="languages" class="w-4 h-4"></i>
+                    <span class="hidden sm:inline" x-text="modes[currentMode].name">Song ngữ</span>
+                    <i data-lucide="chevron-down" class="w-3 h-3"></i>
+                </button>
+                <div x-show="open" @click.outside="open = false" x-cloak class="absolute right-0 mt-2 w-48 bg-white dark:bg-slate-800 border rounded-xl shadow-xl z-20 py-1" :class="themes[currentTheme].border">
+                    <template x-for="(m, key) in modes">
+                        <button @click="currentMode = key; open = false; saveState()" class="w-full text-left px-4 py-2 text-xs font-medium hover:bg-indigo-50 dark:hover:bg-indigo-950/40 flex items-center justify-between">
+                            <span x-text="m.name"></span>
+                            <i data-lucide="check" class="w-3.5 h-3.5 text-indigo-600" x-show="currentMode === key"></i>
+                        </button>
+                    </template>
+                </div>
+            </div>
+
+            <div class="relative" x-data="{ open: false }">
+                <button @click="open = !open" class="flex items-center space-x-1 px-2.5 py-1.5 rounded-lg border text-xs font-semibold bg-white dark:bg-slate-800 hover:bg-gray-50 dark:hover:bg-slate-700 transition" :class="themes[currentTheme].border" title="Cài đặt phát âm">
+                    <i data-lucide="volume-2" class="w-4 h-4 text-indigo-600 dark:text-indigo-400"></i>
+                    <span class="hidden md:inline">Giọng đọc</span>
+                </button>
+                <div x-show="open" @click.outside="open = false" x-cloak class="absolute right-0 mt-2 w-72 bg-white dark:bg-slate-800 border rounded-2xl shadow-xl z-30 p-4 space-y-3" :class="themes[currentTheme].border">
+                    <div class="border-b pb-2 flex justify-between items-center" :class="themes[currentTheme].border">
+                        <span class="font-bold text-xs uppercase tracking-wider text-indigo-600">Cấu hình giọng nói</span>
+                        <button @click="open = false" class="text-gray-400 hover:text-gray-600"><i data-lucide="x" class="w-3.5 h-3.5"></i></button>
+                    </div>
+                    <!-- Voice Selectors -->
+                    <div class="space-y-2">
+                        <div>
+                            <label class="text-[10px] font-bold uppercase opacity-70 block mb-1">Giọng Tiếng Anh (EN)</label>
+                            <select x-model="selectedVoiceEn" class="w-full text-xs p-1.5 rounded-md border bg-transparent dark:bg-slate-700 border-gray-200 dark:border-slate-600 text-slate-800 dark:text-slate-200">
+                                <template x-for="voice in getVoicesForLang('en')" :key="voice.name">
+                                    <option :value="voice.name" x-text="voice.name + ' (' + voice.lang + ')'"></option>
+                                </template>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="text-[10px] font-bold uppercase opacity-70 block mb-1">Giọng Tiếng Việt (VI)</label>
+                            <select x-model="selectedVoiceVi" class="w-full text-xs p-1.5 rounded-md border bg-transparent dark:bg-slate-700 border-gray-200 dark:border-slate-600 text-slate-800 dark:text-slate-200">
+                                <template x-for="voice in getVoicesForLang('vi')" :key="voice.name">
+                                    <option :value="voice.name" x-text="voice.name + ' (' + voice.lang + ')'"></option>
+                                </template>
+                            </select>
+                        </div>
+                    </div>
+                    <!-- Rate & Pitch Sliders -->
+                    <div class="space-y-2 pt-1">
+                        <div>
+                            <div class="flex justify-between text-[10px] font-bold uppercase opacity-70">
+                                <span>Tốc độ đọc</span>
+                                <span class="text-indigo-600" x-text="speechRate + 'x'"></span>
+                            </div>
+                            <input type="range" min="0.5" max="2" step="0.1" x-model="speechRate" class="w-full accent-indigo-600 h-1 bg-gray-200 rounded-lg appearance-none cursor-pointer">
+                        </div>
+                        <div>
+                            <div class="flex justify-between text-[10px] font-bold uppercase opacity-70">
+                                <span>Cao độ</span>
+                                <span class="text-indigo-600" x-text="speechPitch"></span>
+                            </div>
+                            <input type="range" min="0.5" max="1.5" step="0.1" x-model="speechPitch" class="w-full accent-indigo-600 h-1 bg-gray-200 rounded-lg appearance-none cursor-pointer">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Font Size Adjuster -->
+            <div class="flex items-center border rounded-lg overflow-hidden bg-white dark:bg-slate-800" :class="themes[currentTheme].border">
+                <button @click="changeFontSize(-1)" class="p-1.5 hover:bg-gray-100 dark:hover:bg-slate-700 transition" title="Giảm cỡ chữ">
+                    <i data-lucide="minus" class="w-4 h-4"></i>
+                </button>
+                <span class="text-xs font-bold px-2" x-text="fontSizeLabel()">A</span>
+                <button @click="changeFontSize(1)" class="p-1.5 hover:bg-gray-100 dark:hover:bg-slate-700 transition" title="Tăng cỡ chữ">
+                    <i data-lucide="plus" class="w-4 h-4"></i>
+                </button>
+            </div>
+
+            <div class="flex items-center space-x-1 border rounded-lg p-0.5 bg-white dark:bg-slate-800" :class="themes[currentTheme].border">
+                <template x-for="(t, key) in themes">
+                    <button @click="currentTheme = key; saveState()" :class="currentTheme === key ? 'bg-indigo-100 text-indigo-900 dark:bg-indigo-950 dark:text-indigo-300' : 'text-gray-500 hover:text-gray-800'" class="p-1.5 rounded-md transition" :title="t.name">
+                        <i :data-lucide="t.icon" class="w-4 h-4"></i>
+                    </button>
+                </template>
+            </div>
+        </div>
+    </header>
+
+    <!-- MAIN BODY SECTION -->
+    <main class="flex-1 flex overflow-hidden relative">
+
+        <aside 
+            x-show="showSidebar" 
+            x-transition:enter="transition ease-out duration-300"
+            x-transition:enter-start="-translate-x-full"
+            x-transition:enter-end="translate-x-0"
+            x-transition:leave="transition ease-in duration-200"
+            x-transition:leave-start="translate-x-0"
+            x-transition:leave-end="-translate-x-full"
+            :class="themes[currentTheme].sidebarBg + ' ' + themes[currentTheme].border"
+            class="absolute md:relative inset-y-0 left-0 w-80 max-w-[85vw] border-r z-30 flex flex-col shadow-2xl md:shadow-none"
+            x-cloak
+        >
+            <div class="p-4 border-b flex items-center justify-between shrink-0" :class="themes[currentTheme].border">
+                <span class="font-bold text-lg title-font">Mục Lục Sách</span>
+                <button @click="showSidebar = false" class="p-1.5 rounded-lg hover:bg-black/5 dark:hover:bg-white/10 transition">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+            <div class="flex-1 overflow-y-auto p-4 space-y-4">
+                <!-- Cover Link -->
+                <button @click="goToPage('cover'); showSidebar = false" class="w-full text-left p-3 rounded-xl flex items-center space-x-3 transition font-medium" :class="currentPage === 'cover' ? 'bg-indigo-500 text-white shadow-lg shadow-indigo-500/20' : 'hover:bg-black/5 dark:hover:bg-white/5'">
+                    <i data-lucide="book-open" class="w-5 h-5"></i>
+                    <span>Trang bìa & Lời giới thiệu</span>
+                </button>
+                
+                <hr class="opacity-10" />
+
+                <!-- Story list divided into two themes -->
+                <div class="space-y-4">
+                    <div>
+                        <span class="text-[10px] font-bold uppercase tracking-wider text-indigo-500 dark:text-indigo-400 px-3">Phần 1: Cuộc Sống Hiện Đại</span>
+                        <div class="space-y-1 mt-1">
+                            <template x-for="(story, index) in stories.slice(0, 5)" :key="index">
+                                <button 
+                                    @click="goToPage(index); showSidebar = false" 
+                                    class="w-full text-left p-2.5 rounded-xl transition flex flex-col"
+                                    :class="currentPage === index ? 'bg-indigo-600 text-white shadow-md' : 'hover:bg-black/5 dark:hover:bg-white/5'"
+                                >
+                                    <span class="text-[9px] uppercase font-bold opacity-75" x-text="'Truyện ' + (index + 1)"></span>
+                                    <span class="text-xs font-semibold line-clamp-1" x-text="story.titleVi"></span>
+                                    <span class="text-[9px] font-medium opacity-80 italic line-clamp-1" x-text="story.titleEn"></span>
+                                </button>
+                            </template>
+                        </div>
+                    </div>
+
+                    <div>
+                        <span class="text-[10px] font-bold uppercase tracking-wider text-rose-500 dark:text-rose-400 px-3">Phần 2: Kỳ Bí & Cuốn Hút</span>
+                        <div class="space-y-1 mt-1">
+                            <template x-for="(story, index) in stories.slice(5, 10)" :key="index+5">
+                                <button 
+                                    @click="goToPage(index + 5); showSidebar = false" 
+                                    class="w-full text-left p-2.5 rounded-xl transition flex flex-col"
+                                    :class="currentPage === (index + 5) ? 'bg-rose-600 text-white shadow-md' : 'hover:bg-black/5 dark:hover:bg-white/5'"
+                                >
+                                    <span class="text-[9px] uppercase font-bold opacity-75" x-text="'Truyện ' + (index + 6)"></span>
+                                    <span class="text-xs font-semibold line-clamp-1" x-text="story.titleVi"></span>
+                                    <span class="text-[9px] font-medium opacity-80 italic line-clamp-1" x-text="story.titleEn"></span>
+                                </button>
+                            </template>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="p-4 border-t text-center text-[10px] opacity-60 shrink-0" :class="themes[currentTheme].border">
+                Biên soạn bởi Ban Biên Tập<br>Page Truyện Song Ngữ Anh Việt
+            </div>
+        </aside>
+
+        <!-- BOOK READER CONTENT AREA -->
+        <section class="flex-1 overflow-y-auto p-4 md:p-8 flex justify-center items-start relative h-full">
+
+            <!-- BACKGROUND ACCENTS -->
+            <div class="absolute inset-0 pointer-events-none opacity-30 dark:opacity-10 overflow-hidden">
+                <div class="absolute -top-40 -right-40 w-96 h-96 rounded-full bg-indigo-300 blur-3xl"></div>
+                <div class="absolute -bottom-40 -left-40 w-96 h-96 rounded-full bg-emerald-200 blur-3xl"></div>
+            </div>
+
+            <div class="w-full max-w-4xl relative z-10 flex flex-col min-h-full">
+
+                <!-- 1. COVER PAGE / INTRODUCTION -->
+                <div x-show="currentPage === 'cover'" class="space-y-8 py-4 md:py-8" x-cloak>
+                    <!-- Intro Box -->
+                    <div class="bg-white dark:bg-slate-800/80 p-6 md:p-8 rounded-2xl border shadow-sm space-y-6" :class="themes[currentTheme].border">
+                        <h2 class="title-font text-2xl font-bold text-center border-b pb-4 text-indigo-600 dark:text-indigo-400" :class="themes[currentTheme].border">LỜI GIỚI THIỆU</h2>
+                        <div class="serif-font space-y-4 text-sm md:text-base leading-relaxed text-justify opacity-90">
+                            <p>Chào bạn,</p>
+                            <p>Bạn đã bao giờ cảm thấy việc học tiếng Anh quá khô khan?</p>
+                            <p>Học từ vựng rồi lại quên. Học ngữ pháp nhưng vẫn không đọc được tài liệu hay xem phim, đọc truyện.</p>
+                            <p>Đó là bởi ngôn ngữ chỉ thực sự được ghi nhớ khi gắn liền với cảm xúc và những câu chuyện.</p>
+                            <p>Cuốn ebook này được tạo ra với mong muốn giúp bạn học tiếng Anh theo một cách tự nhiên hơn: đọc một câu chuyện hay, hiểu nội dung bằng tiếng Việt, đồng thời tiếp thu từ vựng, cấu trúc và cách diễn đạt tiếng Anh ngay trong từng ngữ cảnh.</p>
+                            <p>Bên trong ebook là 10 câu chuyện song ngữ Anh - Việt, được chia thành hai chủ đề hấp dẫn:</p>
+                            <ul class="list-disc pl-5 space-y-2">
+                                <li><strong>5 câu chuyện phản ánh cuộc sống hiện đại:</strong> Mỗi câu chuyện không chỉ giúp bạn mở rộng vốn tiếng Anh mà còn mang theo một thông điệp ý nghĩa về cuộc sống.</li>
+                                <li><strong>5 câu chuyện kỳ bí, ly kỳ và đầy cuốn hút:</strong> Những tình tiết bất ngờ sẽ khiến bạn muốn đọc tiếp, và đó cũng là cách giúp việc học tiếng Anh trở nên thú vị hơn bao giờ hết.</li>
+                            </ul>
+                            <p>Hy vọng rằng sau khi khép lại trang cuối cùng, bạn không chỉ học thêm được nhiều từ vựng và cách diễn đạt mới, mà còn mang theo những bài học đáng suy ngẫm về cuộc sống, con người và chính bản thân mình.</p>
+                            <p>Chúc bạn có những giờ học tiếng Anh thật thú vị và đầy cảm hứng.</p>
+                            <div class="pt-4 text-right">
+                                <p class="font-bold text-indigo-600 dark:text-indigo-400">Thân mến,</p>
+                                <p class="font-semibold text-xs opacity-75">Ban biên tập Page Truyện Song Ngữ Anh Việt</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Beautiful Table of Contents Grid -->
+                    <div class="space-y-4">
+                        <h3 class="title-font text-xl font-bold px-2 text-center md:text-left">DANH MỤC TRUYỆN SONG NGỮ</h3>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <template x-for="(story, index) in stories" :key="index">
+                                <div 
+                                    @click="goToPage(index)"
+                                    class="p-4 rounded-xl border bg-white/50 dark:bg-slate-800/40 hover:bg-indigo-50/50 dark:hover:bg-indigo-950/20 cursor-pointer transition-all duration-300 hover:shadow-md flex items-start space-x-3 group"
+                                    :class="themes[currentTheme].border"
+                                >
+                                    <div class="w-8 h-8 rounded-full bg-indigo-100 dark:bg-indigo-900/50 text-indigo-600 dark:text-indigo-400 font-bold flex items-center justify-center text-xs shrink-0 group-hover:scale-110 transition-transform" x-text="index+1"></div>
+                                    <div class="space-y-1">
+                                        <h4 class="font-bold text-sm group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors line-clamp-1 text-slate-800 dark:text-slate-100" x-text="story.titleVi"></h4>
+                                        <p class="text-xs opacity-75 italic line-clamp-1" x-text="story.titleEn"></p>
+                                        <span class="inline-block text-[10px] px-2 py-0.5 rounded-full font-semibold opacity-80" 
+                                              :class="index < 5 ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/50 dark:text-emerald-300' : 'bg-rose-100 text-rose-800 dark:bg-rose-950/50 dark:text-rose-300'"
+                                              x-text="story.category"></span>
+                                    </div>
+                                </div>
+                            </template>
+                        </div>
+                    </div>
+
+                    <!-- Get Started Callout -->
+                    <div class="text-center pt-4">
+                        <button @click="goToPage(0)" class="inline-flex items-center space-x-2 bg-indigo-600 text-white font-bold px-8 py-4 rounded-full shadow-lg shadow-indigo-600/30 hover:bg-indigo-500 hover:-translate-y-0.5 active:translate-y-0 transition">
+                            <span>Khám Phá Truyện Đầu Tiên</span>
+                            <i data-lucide="arrow-right" class="w-5 h-5"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 2. STORY PAGES (DYNAMICALLY LOADED) -->
+                <div x-show="currentPage !== 'cover'" class="space-y-6 md:space-y-8" x-cloak>
+                    <!-- Header with Progress and Category -->
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b pb-4" :class="themes[currentTheme].border">
+                        <div class="space-y-1">
+                            <div class="flex items-center space-x-2">
+                                <span class="text-xs font-bold uppercase tracking-wider text-indigo-600 dark:text-indigo-400" x-text="'Chương ' + (currentPage + 1) + ' / 10'"></span>
+                                <span class="w-1.5 h-1.5 rounded-full bg-gray-300"></span>
+                                <span class="text-xs font-semibold opacity-75" x-text="stories[currentPage]?.category"></span>
+                            </div>
+                            <h2 class="title-font text-2xl md:text-3xl font-black" x-text="stories[currentPage]?.titleVi"></h2>
+                            <p class="text-sm md:text-base opacity-75 italic" x-text="stories[currentPage]?.titleEn"></p>
+                        </div>
+                        
+                        <!-- TAB SELECTORS -->
+                        <div class="flex space-x-1 bg-gray-100 dark:bg-slate-800 p-1 rounded-xl self-start sm:self-center">
+                            <button @click="activeTab = 'read'" :class="activeTab === 'read' ? 'bg-white dark:bg-slate-700 shadow-sm text-indigo-600 dark:text-white' : 'opacity-70'" class="px-3 py-1.5 text-xs font-bold rounded-lg transition-all">Đọc truyện</button>
+                            <button @click="activeTab = 'vocab'" :class="activeTab === 'vocab' ? 'bg-white dark:bg-slate-700 shadow-sm text-indigo-600 dark:text-white' : 'opacity-70'" class="px-3 py-1.5 text-xs font-bold rounded-lg transition-all flex items-center space-x-1">
+                                <span>Từ vựng</span>
+                                <span class="bg-indigo-100 dark:bg-indigo-950 text-indigo-600 dark:text-indigo-400 text-[10px] font-extrabold px-1.5 py-0.5 rounded-full" x-text="stories[currentPage]?.vocabulary.length">0</span>
+                            </button>
+                            <button @click="activeTab = 'quiz'" :class="activeTab === 'quiz' ? 'bg-white dark:bg-slate-700 shadow-sm text-indigo-600 dark:text-white' : 'opacity-70'" class="px-3 py-1.5 text-xs font-bold rounded-lg transition-all">Trắc nghiệm</button>
+                        </div>
+                    </div>
+
+                    <!-- TAB CONTENT: READ -->
+                    <div x-show="activeTab === 'read'" class="space-y-8" x-transition>
+                        
+                        <!-- Dynamic SVG Illustration Header for current story -->
+                        <div class="w-full bg-gradient-to-br from-indigo-50 to-violet-50 dark:from-slate-800 dark:to-slate-850 border rounded-2xl overflow-hidden shadow-inner flex flex-col md:flex-row items-center p-6 md:p-8 gap-6" :class="themes[currentTheme].border">
+                            <div class="w-28 h-28 md:w-36 md:h-36 shrink-0 bg-white dark:bg-slate-700 rounded-full flex items-center justify-center p-3 shadow-md" x-html="stories[currentPage]?.illustration"></div>
+                            <div class="space-y-2 text-center md:text-left">
+                                <h3 class="title-font font-bold text-lg text-indigo-850 dark:text-indigo-300" x-text="stories[currentPage]?.illustrationTitle"></h3>
+                                <p class="text-xs md:text-sm text-gray-600 dark:text-gray-300 italic max-w-lg" x-text="stories[currentPage]?.illustrationDesc"></p>
+                                <p class="text-[10px] text-indigo-500 font-bold uppercase tracking-wider">💡 Mẹo: Chạm vào bất kỳ câu nào để nghe phát âm giọng chuẩn!</p>
+                            </div>
+                        </div>
+
+                        <!-- Read Aloud Controller Info -->
+                        <div x-show="isSpeaking" class="bg-indigo-500 text-white px-4 py-2.5 rounded-xl flex items-center justify-between text-xs font-semibold animate-pulse">
+                            <span class="flex items-center space-x-2">
+                                <i data-lucide="volume-2" class="w-4 h-4"></i>
+                                <span>Đang phát âm... Nhấp vào đoạn văn một lần nữa để dừng.</span>
+                            </span>
+                            <button @click="stopSpeech()" class="px-2 py-1 bg-white/20 rounded-md hover:bg-white/30 text-[10px]">Dừng phát</button>
+                        </div>
+
+                        <!-- Main Bilingual Paragraphs Container -->
+                        <div class="space-y-6 serif-font leading-relaxed">
+                            
+                            <!-- If Parallel Mode (Side-by-side) -->
+                            <div x-show="currentMode === 'parallel'" class="grid grid-cols-1 md:grid-cols-2 gap-8" x-cloak>
+                                <!-- EN Column -->
+                                <div class="space-y-6">
+                                    <div class="text-xs uppercase font-extrabold tracking-wider text-indigo-600 dark:text-indigo-400 mb-2">English Story</div>
+                                    <template x-for="(para, pIndex) in stories[currentPage]?.paragraphs" :key="pIndex">
+                                        <div 
+                                            @click="speakText(para.en, 'en')" 
+                                            class="p-3 rounded-lg hover:bg-indigo-500/5 dark:hover:bg-indigo-500/10 cursor-pointer border border-transparent hover:border-indigo-500/20 transition-all duration-200"
+                                            :style="'font-size: ' + fontSizes[currentFontSize] + 'px;'"
+                                        >
+                                            <p class="font-normal" x-text="para.en"></p>
+                                        </div>
+                                    </template>
+                                </div>
+                                <!-- VI Column -->
+                                <div class="space-y-6 border-l pl-6 md:pl-8" :class="themes[currentTheme].border">
+                                    <div class="text-xs uppercase font-extrabold tracking-wider text-emerald-600 dark:text-emerald-400 mb-2">Bản dịch Tiếng Việt</div>
+                                    <template x-for="(para, pIndex) in stories[currentPage]?.paragraphs" :key="pIndex">
+                                        <div 
+                                            @click="speakText(para.vi, 'vi')"
+                                            class="p-3 rounded-lg hover:bg-emerald-500/5 dark:hover:bg-emerald-500/10 cursor-pointer border border-transparent hover:border-emerald-500/20 transition-all duration-200"
+                                            :style="'font-size: ' + fontSizes[currentFontSize] + 'px;'"
+                                        >
+                                            <p class="font-normal opacity-85" x-text="para.vi"></p>
+                                        </div>
+                                    </template>
+                                </div>
+                            </div>
+
+                            <!-- If Interleaved (Xen kẽ) or Single Mode -->
+                            <div x-show="currentMode !== 'parallel'" class="space-y-6 max-w-3xl mx-auto" x-cloak>
+                                <template x-for="(para, pIndex) in stories[currentPage]?.paragraphs" :key="pIndex">
+                                    <div class="border-b pb-4 last:border-b-0 space-y-2 hover:bg-black/[0.02] dark:hover:bg-white/[0.02] p-2 rounded-xl transition" :class="themes[currentTheme].border">
+                                        <!-- English Text -->
+                                        <div x-show="currentMode === 'interleaved' || currentMode === 'en'" class="group relative cursor-pointer" @click="speakText(para.en, 'en')">
+                                            <p class="font-medium leading-relaxed flex items-start text-slate-900 dark:text-white" :style="'font-size: ' + fontSizes[currentFontSize] + 'px;'">
+                                                <span class="text-indigo-500/50 mr-2 text-xs font-bold uppercase select-none mt-1.5 shrink-0">EN</span>
+                                                <span x-text="para.en"></span>
+                                            </p>
+                                            <span class="absolute right-2 top-1.5 opacity-0 group-hover:opacity-100 text-xs text-indigo-500 font-semibold flex items-center transition select-none">
+                                                <i data-lucide="volume-2" class="w-3.5 h-3.5 mr-1"></i> Nghe
+                                            </span>
+                                        </div>
+                                        
+                                        <!-- Vietnamese Text -->
+                                        <div x-show="currentMode === 'interleaved' || currentMode === 'vi'" class="group relative cursor-pointer" @click="speakText(para.vi, 'vi')">
+                                            <p class="italic font-normal leading-relaxed flex items-start text-slate-700 dark:text-slate-300" :style="'font-size: ' + (fontSizes[currentFontSize] - 1) + 'px;'">
+                                                <span class="text-emerald-500/50 mr-2 text-xs font-bold uppercase select-none mt-1.5 shrink-0">VI</span>
+                                                <span x-text="para.vi"></span>
+                                            </p>
+                                            <span class="absolute right-2 top-1.5 opacity-0 group-hover:opacity-100 text-xs text-emerald-500 font-semibold flex items-center transition select-none">
+                                                <i data-lucide="volume-2" class="w-3.5 h-3.5 mr-1"></i> Nghe
+                                            </span>
+                                        </div>
+                                    </div>
+                                </template>
+                            </div>
+
+                        </div>
+
+                        <!-- Shared Emotional Message Banner -->
+                        <div class="border-t-2 border-dashed pt-8 mt-8" :class="themes[currentTheme].border">
+                            <div class="bg-gradient-to-br from-indigo-50 to-emerald-50 dark:from-indigo-950/20 dark:to-emerald-950/20 p-6 rounded-2xl border shadow-inner space-y-4" :class="themes[currentTheme].border">
+                                <div class="flex items-center space-x-2 text-indigo-600 dark:text-indigo-400">
+                                    <i data-lucide="heart" class="w-5 h-5 fill-indigo-600 dark:fill-indigo-400"></i>
+                                    <h4 class="font-extrabold text-sm uppercase tracking-wider title-font">Thông điệp cốt lõi / Key Message</h4>
+                                </div>
+                                <div class="serif-font space-y-3 leading-relaxed">
+                                    <div class="group cursor-pointer" @click="speakText(stories[currentPage]?.messageEn, 'en')">
+                                        <p class="font-bold text-slate-900 dark:text-white" :style="'font-size: ' + fontSizes[currentFontSize] + 'px;'" x-text="stories[currentPage]?.messageEn"></p>
+                                    </div>
+                                    <div class="group cursor-pointer" @click="speakText(stories[currentPage]?.messageVi, 'vi')">
+                                        <p class="italic text-slate-700 dark:text-slate-300" :style="'font-size: ' + (fontSizes[currentFontSize] - 1) + 'px;'" x-text="stories[currentPage]?.messageVi"></p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+
+                    <!-- TAB CONTENT: VOCABULARY FLASHCARDS -->
+                    <div x-show="activeTab === 'vocab'" class="space-y-6" x-transition x-cloak>
+                        <div class="text-center max-w-md mx-auto space-y-2">
+                            <h3 class="title-font font-extrabold text-xl">Thẻ Ghi Nhớ Từ Vựng</h3>
+                            <p class="text-xs opacity-75">Chạm vào thẻ để lật ngược xem định nghĩa và bấm nút loa để nghe phát âm mẫu.</p>
+                        </div>
+
+                        <!-- Flashcard Card Container -->
+                        <div class="flex flex-col items-center justify-center space-y-6 py-4">
+                            <!-- Card Body with 3D Flip Effect -->
+                            <div 
+                                @click="cardFlipped = !cardFlipped" 
+                                class="w-72 h-44 sm:w-96 sm:h-52 cursor-pointer relative preserve-3d transition-transform duration-500 ease-in-out"
+                                :class="cardFlipped ? '[transform:rotateY(180deg)]' : ''"
+                            >
+                                <!-- Front Side (English) -->
+                                <div class="absolute inset-0 backface-hidden bg-gradient-to-br from-indigo-500 to-indigo-600 text-white rounded-2xl shadow-xl flex flex-col justify-between p-6">
+                                    <span class="text-[10px] font-extrabold uppercase tracking-widest opacity-75">Từ vựng (English)</span>
+                                    <div class="text-center space-y-1">
+                                        <h4 class="text-xl sm:text-2xl font-bold tracking-tight" x-text="stories[currentPage]?.vocabulary[vocabIndex]?.en"></h4>
+                                        <p class="text-xs opacity-70 italic" x-text="stories[currentPage]?.vocabulary[vocabIndex]?.partOfSpeech"></p>
+                                    </div>
+                                    <button @click.stop="speakText(stories[currentPage]?.vocabulary[vocabIndex]?.en, 'en')" class="self-end p-2 rounded-full bg-white/20 hover:bg-white/35 transition" title="Nghe đọc">
+                                        <i data-lucide="volume-2" class="w-4 h-4"></i>
+                                    </button>
+                                </div>
+
+                                <!-- Back Side (Vietnamese Translation) -->
+                                <div class="absolute inset-0 backface-hidden bg-gradient-to-br from-emerald-500 to-teal-600 text-white rounded-2xl shadow-xl flex flex-col justify-between p-6 [transform:rotateY(180deg)]">
+                                    <span class="text-[10px] font-extrabold uppercase tracking-widest opacity-75">Nghĩa tiếng Việt</span>
+                                    <div class="text-center space-y-1">
+                                        <h4 class="text-xl sm:text-2xl font-bold tracking-tight" x-text="stories[currentPage]?.vocabulary[vocabIndex]?.vi"></h4>
+                                        <p class="text-[11px] opacity-90 line-clamp-2 italic px-4" x-text="stories[currentPage]?.vocabulary[vocabIndex]?.example"></p>
+                                    </div>
+                                    <button @click.stop="speakText(stories[currentPage]?.vocabulary[vocabIndex]?.vi, 'vi')" class="self-end p-2 rounded-full bg-white/20 hover:bg-white/35 transition" title="Nghe đọc">
+                                        <i data-lucide="volume-2" class="w-4 h-4"></i>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Carousel Controls -->
+                            <div class="flex items-center space-x-6">
+                                <button @click="prevVocab()" class="p-3 rounded-full border hover:bg-black/5 dark:hover:bg-white/5 transition" :class="themes[currentTheme].border">
+                                    <i data-lucide="arrow-left" class="w-4 h-4"></i>
+                                </button>
+                                <span class="text-xs font-bold" x-text="(vocabIndex + 1) + ' / ' + stories[currentPage]?.vocabulary.length"></span>
+                                <button @click="nextVocab()" class="p-3 rounded-full border hover:bg-black/5 dark:hover:bg-white/5 transition" :class="themes[currentTheme].border">
+                                    <i data-lucide="arrow-right" class="w-4 h-4"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Vocabulary Summary List -->
+                        <div class="bg-white dark:bg-slate-800 border p-4 rounded-xl space-y-3" :class="themes[currentTheme].border">
+                            <h4 class="font-bold text-xs uppercase tracking-wider text-indigo-600 dark:text-indigo-400">Danh sách từ vựng trọng tâm</h4>
+                            <div class="divide-y divide-gray-100 dark:divide-slate-700">
+                                <template x-for="(item, idx) in stories[currentPage]?.vocabulary" :key="idx">
+                                    <div class="py-2.5 flex items-start justify-between">
+                                        <div class="space-y-0.5">
+                                            <div class="flex items-center space-x-2">
+                                                <span class="font-bold text-sm text-indigo-600 dark:text-indigo-400" x-text="item.en"></span>
+                                                <span class="text-[10px] px-1.5 py-0.5 rounded bg-gray-100 dark:bg-slate-700 text-gray-500" x-text="item.partOfSpeech"></span>
+                                            </div>
+                                            <p class="text-xs text-slate-600 dark:text-slate-400" x-text="item.vi"></p>
+                                        </div>
+                                        <button @click="speakText(item.en, 'en')" class="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-700">
+                                            <i data-lucide="volume-2" class="w-3.5 h-3.5 text-gray-500"></i>
+                                        </button>
+                                    </div>
+                                </template>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- TAB CONTENT: COMPREHENSION QUIZ -->
+                    <div x-show="activeTab === 'quiz'" class="space-y-6" x-transition x-cloak>
+                        <div class="text-center max-w-md mx-auto space-y-2">
+                            <h3 class="title-font font-extrabold text-xl">Thử Thách Đọc Hiểu</h3>
+                            <p class="text-xs opacity-75">Kiểm tra mức độ ghi nhớ từ vựng và bài học nhân văn của bạn trong chương này!</p>
+                        </div>
+
+                        <div class="bg-white dark:bg-slate-800 border rounded-2xl p-6 space-y-6 shadow-sm" :class="themes[currentTheme].border">
+                            <!-- Question Text -->
+                            <div class="space-y-2">
+                                <span class="text-[10px] uppercase font-black tracking-widest text-indigo-600 dark:text-indigo-400">Câu hỏi ôn tập</span>
+                                <p class="font-bold text-base md:text-lg text-slate-800 dark:text-slate-100" x-text="stories[currentPage]?.quiz.question"></p>
+                            </div>
+
+                            <!-- Options Grid -->
+                            <div class="grid grid-cols-1 gap-3">
+                                <template x-for="(opt, oIdx) in stories[currentPage]?.quiz.options" :key="oIdx">
+                                    <button 
+                                        @click="selectQuizOption(oIdx)"
+                                        :disabled="quizSubmitted"
+                                        class="p-4 rounded-xl border text-left font-medium text-xs sm:text-sm transition-all duration-200 flex items-center justify-between"
+                                        :class="getQuizOptionClass(oIdx)"
+                                    >
+                                        <span x-text="opt"></span>
+                                        <div class="shrink-0 ml-2">
+                                            <i data-lucide="circle" class="w-4 h-4 text-gray-400" x-show="!quizSubmitted"></i>
+                                            <i data-lucide="circle-check" class="w-5 h-5 text-emerald-500 fill-emerald-100" x-show="quizSubmitted && oIdx === stories[currentPage]?.quiz.correctAnswer"></i>
+                                            <i data-lucide="circle-alert" class="w-5 h-5 text-rose-500 fill-rose-100" x-show="quizSubmitted && selectedQuizOption === oIdx && oIdx !== stories[currentPage]?.quiz.correctAnswer"></i>
+                                        </div>
+                                    </button>
+                                </template>
+                            </div>
+
+                            <!-- Explanations and Restart -->
+                            <div x-show="quizSubmitted" class="p-4 rounded-xl bg-indigo-50 dark:bg-indigo-950/30 border border-indigo-100 dark:border-indigo-900/50 space-y-2" x-transition>
+                                <div class="flex items-center space-x-2 text-indigo-600 dark:text-indigo-400 font-bold text-xs">
+                                    <i data-lucide="info" class="w-4 h-4"></i>
+                                    <span>Gợi ý lời giải (Explanation)</span>
+                                </div>
+                                <p class="text-xs md:text-sm leading-relaxed" x-text="stories[currentPage]?.quiz.explanation"></p>
+                                <button @click="resetQuiz()" class="text-xs font-bold text-indigo-600 hover:underline pt-2 inline-block">Thử lại câu hỏi</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- BOTTOM NAVIGATOR AND PROGRESS SLIDER -->
+                    <div class="flex items-center justify-between pt-6 border-t" :class="themes[currentTheme].border">
+                        <button @click="prevPage()" class="flex items-center space-x-2 text-xs font-bold px-4 py-2 rounded-xl border hover:bg-black/5 dark:hover:bg-white/5 transition" :class="themes[currentTheme].border">
+                            <i data-lucide="arrow-left" class="w-4 h-4"></i>
+                            <span class="hidden sm:inline">Quay lại</span>
+                        </button>
+                        
+                        <div class="text-center">
+                            <span class="text-xs font-bold opacity-60" x-text="'Tiến độ: ' + getReadingProgress() + '%'"></span>
+                            <div class="w-24 sm:w-36 h-1.5 bg-gray-200 dark:bg-slate-700 rounded-full mt-1.5 overflow-hidden">
+                                <div class="h-full bg-gradient-to-r from-indigo-500 to-emerald-500 transition-all duration-300" :style="'width: ' + getReadingProgress() + '%'"></div>
+                            </div>
+                        </div>
+
+                        <button @click="nextPage()" class="flex items-center space-x-2 text-xs font-bold px-4 py-2 rounded-xl bg-indigo-600 text-white shadow-lg shadow-indigo-600/10 hover:bg-indigo-500 transition">
+                            <span x-text="currentPage === 9 ? 'Về Trang đầu' : 'Chương tiếp'">Tiếp tục</span>
+                            <i data-lucide="arrow-right" class="w-4 h-4" x-show="currentPage !== 9"></i>
+                            <i data-lucide="rotate-ccw" class="w-4 h-4" x-show="currentPage === 9"></i>
+                        </button>
+                    </div>
+
+                </div>
+
+            </div>
+        </section>
+
+    </main>
+
+    <!-- SYSTEM DATA & LOGIC -->
+    <script>
+        function ebookApp() {
+            return {
+                showSidebar: false,
+                currentPage: 'cover', 
+                currentMode: 'interleaved', 
+                currentTheme: 'parchment', 
+                currentFontSize: 2, 
+                activeTab: 'read', 
+                vocabIndex: 0,
+                cardFlipped: false,
+                isSpeaking: false,
+                speechSynth: window.speechSynthesis || null,
+                activeSpeechUtterance: null,
+                selectedQuizOption: null,
+                quizSubmitted: false,
+
+                speechRate: 1,      
+                speechPitch: 1,     
+                selectedVoiceEn: '',
+                selectedVoiceVi: '',
+                systemVoices: [],   
+
+                fontSizes: [13, 15, 17, 19, 21],
+                fontSizeLabel() {
+                    const labels = ['A-', 'A', 'A+', 'A++', 'A+++'];
+                    return labels[this.currentFontSize];
+                },
+
+                themes: {
+                    parchment: {
+                        name: 'Ấm áp (Giấy cổ)',
+                        icon: 'book',
+                        bg: 'bg-[#FDFBF7]',
+                        text: 'text-[#3E2723]',
+                        border: 'border-[#EFEBE9]',
+                        sidebarBg: 'bg-[#F5F2EB]',
+                        headerBg: 'bg-[#FAF7F0]'
+                    },
+                    light: {
+                        name: 'Sáng',
+                        icon: 'sun',
+                        bg: 'bg-slate-50',
+                        text: 'text-slate-800',
+                        border: 'border-slate-200',
+                        sidebarBg: 'bg-white',
+                        headerBg: 'bg-white'
+                    },
+                    midnight: {
+                        name: 'Tối',
+                        icon: 'moon',
+                        bg: 'bg-[#0B0F19]',
+                        text: 'text-slate-300',
+                        border: 'border-slate-800/80',
+                        sidebarBg: 'bg-[#0E1524]',
+                        headerBg: 'bg-[#0E1524]'
+                    },
+                    shadow: {
+                        name: 'Huyền bí',
+                        icon: 'eye',
+                        bg: 'bg-[#090202]',
+                        text: 'text-[#D1C4C4]',
+                        border: 'border-[#2D1B1B]',
+                        sidebarBg: 'bg-[#140606]',
+                        headerBg: 'bg-[#100303]'
+                    }
+                },
+
+                modes: {
+                    interleaved: { name: 'Song ngữ xen kẽ' },
+                    parallel: { name: 'Song ngữ song song' },
+                    en: { name: 'Chỉ Tiếng Anh' },
+                    vi: { name: 'Chỉ Tiếng Việt' }
+                },
+
+                stories: [
+                    {
+                        category: "Cuộc sống hiện đại",
+                        titleEn: "PHONE ADDICTION: 5 HOURS A DAY",
+                        titleVi: "NGHIỆN ĐIỆN THOẠI: 5 GIỜ MỖI NGÀY",
+                        illustrationTitle: "Màn hình thôi miên",
+                        illustrationDesc: "Thời gian trôi tuột đi trong từng lượt lướt ngón tay vô định trên chiếc smartphone phát ra ánh sáng xanh mệt mỏi.",
+                        illustration: `<svg viewBox="0 0 100 100" class="w-full h-full text-indigo-500" fill="none" stroke="currentColor" stroke-width="2"><rect x="30" y="15" width="40" height="70" rx="6"/><circle cx="50" cy="78" r="3" fill="currentColor"/><path d="M35 30h30M35 40h20M35 50h15" stroke-linecap="round"/><path d="M55 55l10 10-5 10" stroke-width="1.5" class="animate-bounce"/></svg>`,
+                        paragraphs: [
+                            { en: "Nam was 26 years old and worked as an office employee in the city.", vi: "Nam 26 tuổi và làm nhân viên văn phòng tại thành phố." },
+                            { en: "Every day, he complained that he was too busy.", vi: "Mỗi ngày, anh đều than phiền rằng mình quá bận rộn." },
+                            { en: "Too busy to exercise.", vi: "Quá bận để tập thể dục." },
+                            { en: "Too busy to read books.", vi: "Quá bận để đọc sách." },
+                            { en: "Too busy to learn English, something he had planned to do for years.", vi: "Quá bận để học tiếng Anh, điều mà anh đã dự định làm từ nhiều năm nay." },
+                            { en: "Whenever he saw his friends achieving new goals, he would tell himself: “I want to improve too. I want to change.”", vi: "Mỗi khi thấy bạn bè đạt được những mục tiêu mới, anh lại tự nhủ: “Mình cũng muốn tiến bộ. Mình muốn thay đổi.”" },
+                            { en: "But nothing ever changed.", vi: "Nhưng chẳng có gì thay đổi cả." },
+                            { en: "Every evening after work, Nam lay on his bed and opened his phone.", vi: "Mỗi tối sau giờ làm, Nam lại nằm trên giường và mở điện thoại lên." },
+                            { en: "At first, he only wanted to watch a few videos to relax.", vi: "Ban đầu, anh chỉ muốn xem vài video để thư giãn." },
+                            { en: "But the algorithm always knew how to keep him scrolling.", vi: "But thuật toán luôn biết cách khiến anh lướt mãi không ngừng." },
+                            { en: "One video led to another. News. Comedy clips. Drama. Food reviews. Movie reviews.", vi: "Video này dẫn đến video khác. Tin tức. Clip hài. Những vụ thị phi, hóng biến. Review đồ ăn. Review phim." },
+                            { en: "When he finally looked at the clock, it was already one in the morning.", vi: "Khi cuối cùng anh nhìn lên đồng hồ, lúc đó đã là một giờ sáng." },
+                            { en: "Nam blamed himself: “Tomorrow will be different.” But the next day was exactly the same.", vi: "Nam tự trách mình: “Ngày mai sẽ khác.” Nhưng ngày hôm sau lại y hệt như vậy." },
+                            { en: "One morning, he arrived at work exhausted from lack of sleep.", vi: "Một buổi sáng, anh đến nơi làm việc trong tình trạng kiệt sức vì thiếu ngủ." },
+                            { en: "During a meeting, he could not focus.", vi: "Trong suốt cuộc họp, anh không thể nào tập trung nổi." },
+                            { en: "His manager explained a task, and Nam had to ask twice because he was not paying attention.", vi: "Quản lý đã giải thích công việc, và Nam đã phải hỏi lại tới hai lần vì không chú ý." },
+                            { en: "That afternoon, he made a serious mistake in an important report. For the first time, he felt worried.", vi: "Chiều hôm đó, anh mắc một sai lầm nghiêm trọng trong một báo cáo quan trọng. Lần đầu tiên, anh cảm thấy lo lắng." },
+                            { en: "That evening, his phone showed a weekly screen-time report. Curious, Nam opened it. He froze.", vi: "Tối hôm đó, điện thoại của anh hiển thị báo cáo thời gian sử dụng màn hình hàng tuần. Tò mò, Nam mở nó ra. Anh sững sờ." },
+                            { en: "Average daily usage: 5 hours and 18 minutes.", vi: "Thời gian sử dụng trung bình hàng ngày: 5 giờ 18 phút." },
+                            { en: "He took out a calculator. More than 36 hours every week. Nearly 150 hours every month. Almost an entire week of his life.", vi: "Anh lấy máy tính ra. Hơn 36 giờ mỗi tuần. Gần 150 giờ mỗi tháng. Suýt soát cả một tuần cuộc đời của anh." },
+                            { en: "Nam sat quietly for a long time.", vi: "Nam ngồi im lặng một lúc lâu." },
+                            { en: "A thought suddenly crossed his mind: “What if I spent half of that time learning a new skill? What if I spent it with my family? What if I used it to take care of my health?”", vi: "Một suy nghĩ bất chợt lóe lên trong đầu anh: “Sẽ ra sao nếu mình dành một nửa thời gian đó để học một kỹ năng mới? Sẽ ra sao nếu mình dành nó cho gia đình? Sẽ ra sao nếu mình dùng nó để chăm sóc sức khỏe của bản thân?”" },
+                            { en: "For the first time, he realized that the problem was not a lack of time. The problem was where he was spending it.", vi: "Lần đầu tiên, anh nhận ra rằng vấn đề không phải là thiếu thời gian. Vấn đề là anh đang tiêu xài nó vào đâu." },
+                            { en: "The next day, Nam decided to make a change. He did not delete his phone. He did not quit social media. He simply reduced his daily screen time by one hour.", vi: "Ngày hôm sau, Nam quyết định thay đổi. Anh không vứt bỏ điện thoại. Anh không xóa mạng xã hội. Anh chỉ đơn giản là giảm thời gian sử dụng màn hình mỗi ngày xuống một tiếng." },
+                            { en: "When his limit was reached, he picked up a book instead. At first, it was difficult. After only a few minutes, he wanted to grab his phone again. But he kept trying.", vi: "Khi giới hạn thời gian vừa hết, anh liền cầm một cuốn sách lên thay thế. Ban đầu, điều đó thật khó khăn. Chỉ sau vài phút, anh lại muốn vớ lấy chiếc điện thoại. Nhưng anh vẫn tiếp tục cố gắng." },
+                            { en: "One week. One month. Then three months. Small changes began to appear.", vi: "Một tuần. Một tháng. Rồi ba tháng. Những thay đổi nhỏ bắt đầu xuất hiện." },
+                            { en: "He slept better. He felt more energetic. He performed better at work.", vi: "Anh ngủ ngon hơn. Anh cảm thấy tràn đầy năng lượng hơn. Anh làm việc hiệu quả hơn." },
+                            { en: "One year later, Nam had read more than twenty books. He completed the English course he had postponed for years.", vi: "Một năm sau, Nam đã đọc hơn hai mươi cuốn sách. Anh hoàn thành khóa học tiếng Anh mà mình đã trì hoãn suốt nhiều năm." },
+                            { en: "And the thing that surprised him most was this: He was still happy. In fact, he was happier than before. Because he had finally regained the most valuable thing he owned. His time.", vi: "Và điều khiến anh ngạc nhiên nhất chính là: Anh vẫn hạnh phúc. Thực tế, anh còn hạnh phúc hơn trước. Bởi vì cuối cùng anh đã lấy lại được thứ quý giá nhất mà anh sở hữu. Thời gian của anh." }
+                        ],
+                        messageEn: "Phones are not bad. Social media is not bad. But if we do not control them, they will control us. A few minutes each day may seem harmless. But over the years, those minutes can become a significant part of our lives.",
+                        messageVi: "Điện thoại không xấu. Mạng xã hội cũng không xấu. Nhưng nếu chúng ta không kiểm soát chúng, chúng sẽ kiểm soát chúng ta. Vài phút mỗi ngày tưởng chừng như vô hại. Nhưng qua nhiều năm, những phút ấy có thể trở thành một phần đáng kể trong cuộc đời chúng ta.",
+                        vocabulary: [
+                            { en: "Complain", vi: "Than phiền, kêu ca", partOfSpeech: "verb", example: "He complained that he was too busy." },
+                            { en: "Algorithm", vi: "Thuật toán", partOfSpeech: "noun", example: "The algorithm always knew how to keep him scrolling." },
+                            { en: "Exhausted", vi: "Kiệt sức, vô cùng mệt mỏi", partOfSpeech: "adjective", example: "He arrived at work exhausted from lack of sleep." },
+                            { en: "Postpone", vi: "Trì hoãn, hoãn lại", partOfSpeech: "verb", example: "He completed the course he had postponed for years." }
+                        ],
+                        quiz: {
+                            question: "Nam đã nhận ra nguyên nhân sâu xa của việc không thể hoàn thành các mục tiêu cá nhân là gì?",
+                            options: [
+                                "Anh ấy thực sự không có đủ 24 giờ mỗi ngày.",
+                                "Do áp lực công việc văn phòng quá lớn không có thời gian nghỉ.",
+                                "Do anh ấy tiêu xài quá nhiều thời gian (hơn 5 giờ mỗi ngày) vào việc lướt điện thoại vô thức.",
+                                "Do các khóa học ngoại ngữ quá đắt đỏ và khô khan."
+                            ],
+                            correctAnswer: 2,
+                            explanation: "Báo cáo thời gian màn hình chỉ ra Nam đã dành trung bình hơn 5 tiếng mỗi ngày cho điện thoại, tương đương gần một tuần mỗi tháng cuộc đời của mình."
+                        }
+                    },
+                    {
+                        category: "Cuộc sống hiện đại",
+                        titleEn: "SELF-COMPARISON: THE SUCCESSFUL FRIEND",
+                        titleVi: "SO SÁNH BẢN THÂN: NGƯỜI BẠN THÀNH CÔNG",
+                        illustrationTitle: "Cán cân ảo vọng",
+                        illustrationDesc: "Việc so sánh những điều bình dị đời thường của mình với những thành công hào nhoáng được trưng bày của người khác chỉ mang đến gánh nặng vô hình.",
+                        illustration: `<svg viewBox="0 0 100 100" class="w-full h-full text-emerald-500" fill="none" stroke="currentColor" stroke-width="2"><path d="M50 20v60M25 45h50" stroke-linecap="round"/><circle cx="25" cy="55" r="10"/><circle cx="75" cy="55" r="10"/><path d="M25 45v10M75 45v10" stroke-dasharray="2 2"/></svg>`,
+                        paragraphs: [
+                            { en: "Thao was 28 years old. Every morning, the first thing she did was open Facebook and Instagram. Just a few minutes of scrolling.", vi: "Thảo 28 tuổi. Mỗi sáng, việc đầu tiên cô làm là mở Facebook và Instagram. Chỉ lướt qua vài phút thôi." },
+                            { en: "But almost every day, she saw someone living the life she dreamed of. One friend had just bought a new car. Another had been promoted to a management position. Someone was posting photos from Europe. Someone else was celebrating a newly purchased apartment.", vi: "Nhưng hầu như ngày nào, cô cũng thấy ai đó đang sống cuộc đời mà cô hằng mơ ước. Một người bạn vừa mua xe mới. Một người khác vừa được thăng chức lên vị trí quản lý. Có người đăng ảnh từ châu Âu. Có người khác lại đang ăn mừng vì vừa mua được căn hộ mới." },
+                            { en: "And Thao? She was still renting a small apartment. Still riding a motorbike to work. Still living what seemed like an ordinary life.", vi: "Còn Thảo thì sao? Cô vẫn đang thuê một căn hộ nhỏ. Vẫn đi xe máy đến chỗ làm. Vẫn sống một cuộc đời có vẻ như bình thường." },
+                            { en: "At first, she scrolled for entertainment. But slowly, she began comparing herself to others.", vi: "Ban đầu, cô lướt mạng chỉ để giải trí. Nhưng dần dần, cô bắt đầu so sánh bản thân với người khác." },
+                            { en: "Every time she saw someone else's success, she felt a little more behind. Every night, she asked herself: “Why are they getting so far ahead? Why am I still standing in the same place?”", vi: "Mỗi lần nhìn thấy thành công của người khác, cô lại cảm thấy mình tụt lại phía sau thêm một chút. Mỗi đêm, cô tự hỏi mình: “Tại sao họ lại tiến xa đến vậy? Tại sao mình vẫn đứng dậm chân tại chỗ?”" },
+                            { en: "In reality, Thao had a stable job. Good health. And a loving family. But she could no longer see what she already had. She could only see what she did not have.", vi: "Trên thực tế, Thảo có một công việc ổn định. Sức khỏe tốt. Và một gia đình yêu thương. Nhưng cô không còn nhìn thấy những gì mình đang có. Cô chỉ thấy những gì mình không có." },
+                            { en: "Little by little, comparison stole her happiness. Even her own achievements no longer made her feel proud.", vi: "Từng chút một, sự so sánh đã cướp đi hạnh phúc của cô. Ngay cả những thành tựu của chính mình cũng không còn khiến cô cảm thấy tự hào." },
+                            { en: "One weekend afternoon, Thao received a message from Minh. He was the friend she had always admired the most.", vi: "Một buổi chiều cuối tuần, Thảo nhận được tin nhắn từ Minh. Anh là người bạn mà cô luôn ngưỡng mộ nhất." },
+                            { en: "Minh had been an excellent student. Graduated with a high-paying job. Bought a home before turning thirty. On social media, his life looked almost perfect.", vi: "Minh từng là một học sinh xuất sắc. Tốt nghiệp ra trường với một công việc lương cao. Mua được nhà trước tuổi ba mươi. Trên mạng xã hội, cuộc sống của anh trông gần như hoàn hảo." },
+                            { en: "They met for coffee. Throughout the conversation, Thao kept thinking: “His life must be free of worries.”", vi: "Họ hẹn nhau đi cà phê. Suốt buổi trò chuyện, Thảo liên tục nghĩ: “Cuộc sống của cậu ấy chắc chẳng có gì phải lo nghĩ.”" },
+                            { en: "But as they talked longer, Minh suddenly sighed. He looked out the window and said: “I'm exhausted.”", vi: "Nhưng khi họ trò chuyện lâu hơn, Minh bỗng nhiên thở dài. Anh nhìn ra ngoài cửa sổ và nói: “Mình kiệt sức rồi.”" },
+                            { en: "Thao was surprised. “Exhausted from what?” Minh gave a sad smile.", vi: "Thảo ngạc nhiên. “Kiệt sức vì chuyện gì cơ chứ?” Minh nở một nụ cười buồn." },
+                            { en: "“I'm paying off a home loan that will take nearly twenty years. I barely have time for myself. I haven't slept well for three months. And honestly... some days, I wish I could have the peace that you have.”", vi: "“Mình đang trả một khoản vay mua nhà mà sẽ mất gần hai mươi năm. Mình chẳng có nổi thời gian dành cho bản thân. Ba tháng nay mình chưa có một giấc ngủ ngon. Và thú thật... có những ngày, mình chỉ ước có được sự bình yên giống như bạn.”" },
+                            { en: "Thao stayed silent. She had never thought about that before. On social media, Minh was always smiling. But in real life, he was carrying burdens of his own.", vi: "Thảo im lặng. Cô chưa từng nghĩ về điều đó trước đây. Trên mạng xã hội, Minh luôn mỉm cười. Nhưng ngoài đời thực, anh cũng đang mang những gánh nặng của riêng mình." },
+                            { en: "For the first time, Thao realized a simple truth: Everyone is fighting battles that other people cannot see.", vi: "Lần đầu tiên, Thảo nhận ra một sự thật đơn giản: Ai cũng đang phải chiến đấu với những khó khăn mà người khác không nhìn thấy được." },
+                            { en: "The person with a house may be carrying debt. The successful person may be completely exhausted. The person who always smiles may be deeply lonely.", vi: "Người có nhà có thể đang mang nợ. Người thành công có thể đang kiệt sức hoàn toàn. Người luôn mỉm cười có thể đang cô đơn sâu thẳm." },
+                            { en: "After that meeting, Thao went home and looked through her old photos. She noticed things she had never appreciated before. A family dinner. A short trip with friends. An afternoon helping her mother in the garden.", vi: "Sau cuộc gặp đó, Thảo về nhà và lật xem những bức ảnh cũ. Cô nhận ra những điều mà trước đây mình chưa từng trân trọng. Một bữa tối gia đình. Một chuyến đi ngắn cùng bạn bè. Một buổi chiều giúp mẹ làm vườn." },
+                            { en: "Those moments were not glamorous. But they were real happiness.", vi: "Những khoảnh khắc đó không hề lộng lẫy. Nhưng đó chính là hạnh phúc thực sự." },
+                            { en: "Slowly, Thao stopped comparing herself to other people. Instead, she focused on becoming a better version of herself than she had been yesterday.", vi: "Dần dần, Thảo ngừng so sánh bản thân với người khác. Thay vào đó, cô tập trung trở thành một phiên bản tốt hơn của chính mình so với ngày hôm qua." },
+                            { en: "Not faster than anyone else. Just a little better each day. And strangely, she felt much lighter afterward.", vi: "Không phải nhanh hơn ai khác. Chỉ cần tốt hơn một chút mỗi ngày. Và kỳ lạ thay, cô cảm thấy nhẹ nhõm hơn rất nhiều sau đó." },
+                            { en: "Because she finally understood: Life is not a race to see who reaches the finish line first. Everyone has their own path, their own pace, and their own journey.", vi: "Bởi vì cuối cùng cô đã hiểu ra: Cuộc sống không phải là một cuộc đua để xem ai về đích trước. Mỗi người đều có một lối đi riêng, một tốc độ riêng, và một hành trình của riêng mình." }
+                        ],
+                        messageEn: "Do not compare the behind-the-scenes of your life to the highlight moments of someone else's. What matters is not where you stand compared to other people. What matters is whether you are moving forward in your own way.",
+                        messageVi: "Đừng bao giờ so sánh những góc khuất phía sau hậu trường của cuộc đời mình với những khoảnh khắc hào nhoáng tỏa sáng của người khác. Điều quan trọng không phải là bạn đang đứng ở đâu so với mọi người. Điều quan trọng là bạn có đang tiến về phía trước theo cách của riêng mình hay không.",
+                        vocabulary: [
+                            { en: "Ordinary", vi: "Bình thường, thông thường", partOfSpeech: "adjective", example: "She lived what seemed like an ordinary life." },
+                            { en: "Achievement", vi: "Thành tựu, kết quả tốt", partOfSpeech: "noun", example: "Her achievements no longer made her proud." },
+                            { en: "Admire", vi: "Ngưỡng mộ, khâm phục", partOfSpeech: "verb", example: "He was the friend she had always admired the most." },
+                            { en: "Burden", vi: "Gánh nặng, nỗi vất vả", partOfSpeech: "noun", example: "Everyone carries their own hidden burdens." }
+                        ],
+                        quiz: {
+                            question: "Điều bất ngờ gì về cuộc sống hoàn hảo của Minh (người bạn thành công của Thảo) đã giúp cô thức tỉnh?",
+                            options: [
+                                "Minh thực ra đã phá sản và phải bán nhà.",
+                                "Minh đang ngập trong nợ nần mua nhà kéo dài 20 năm, kiệt sức và khao khát có được sự bình yên như Thảo.",
+                                "Minh quyết định bỏ việc để đi du lịch châu Âu.",
+                                "Minh thừa nhận tất cả hình ảnh trên mạng là giả mạo."
+                            ],
+                            correctAnswer: 1,
+                            explanation: "Minh thổ lộ anh đang gánh khoản nợ ngân hàng mua nhà kéo dài 20 năm, không có thời gian nghỉ ngơi, mất ngủ 3 tháng và chỉ ao ước sự tự do, bình yên của Thảo."
+                        }
+                    },
+                    {
+                        category: "Cuộc sống hiện đại",
+                        titleEn: "WILL AI REPLACE HUMANS? THE FEAR OF BEING LEFT BEHIND",
+                        titleVi: "AI CÓ THAY THẾ CON NGƯỜI? NỖI SỢ BỊ BỎ LẠI PHÍA SAU",
+                        illustrationTitle: "Trí tuệ nhân tạo và Con người",
+                        illustrationDesc: "Biểu tượng của sự giao thoa công nghệ số. Không phải lo sợ bị thay thế mà là dũng cảm làm chủ và thích nghi với công cụ mới.",
+                        illustration: `<svg viewBox="0 0 100 100" class="w-full h-full text-indigo-500" fill="none" stroke="currentColor" stroke-width="2"><path d="M50 15v70M15 50h70" stroke-dasharray="1 1"/><circle cx="50" cy="50" r="20"/><path d="M30 30l40 40M70 30L30 40" stroke-linecap="round"/><circle cx="50" cy="50" r="5" fill="currentColor"/></svg>`,
+                        paragraphs: [
+                            { en: "Duy, 28 years old, worked as a marketing employee for a small company.", vi: "Duy, 28 tuổi, làm nhân viên marketing cho một công ty nhỏ." },
+                            { en: "One morning, while drinking coffee, he read an article with the headline: “AI will replace millions of jobs in the future.” Duy froze. He kept reading.", vi: "Một buổi sáng, trong lúc uống cà phê, anh đọc được một bài báo có tiêu đề: “Trí tuệ nhân tạo (AI) sẽ thay thế hàng triệu việc làm trong tương lai.” Duy đứng hình. Anh tiếp tục đọc." },
+                            { en: "Then another article. Then dozens of videos on TikTok. Some people said programmers would be replaced. Others claimed office workers would disappear. Some even said AI could do almost everything faster than humans.", vi: "Rồi đến một bài báo khác. Sau đó là hàng chục video trên TikTok. Một số người cho rằng các lập trình viên sẽ bị thay thế. Những người khác khẳng định nhân viên văn phòng sẽ biến mất. Thậm chí có người còn nói AI có thể làm hầu hết mọi việc nhanh hơn con người." },
+                            { en: "The more he watched, the more anxious he became. That night, he could barely sleep. Only one question kept repeating in his mind: “What if one day my company no longer needs me?”", vi: "Càng xem, anh càng cảm thấy lo lắng. Đêm đó, anh gần như không thể ngủ được. Chỉ có một câu hỏi cứ lặp đi lặp lại trong đầu anh: “Nếu một ngày nào đó công ty không cần mình nữa thì sao?”" },
+                            { en: "Over the following weeks, Duy lived with constant worry. Every time he saw AI generate amazing images, he felt nervous. Every time he saw AI write content, he felt afraid. Every time he read about a new technology, he felt like he was falling behind.", vi: "Những tuần tiếp theo, Duy sống trong trạng thái bất an liên tục. Mỗi lần thấy AI tạo ra những bức ảnh tuyệt đẹp, anh lại cảm thấy lo lắng. Mỗi lần thấy AI viết nội dung, anh lại cảm thấy sợ hãi. Mỗi lần đọc về một công nghệ mới, anh lại cảm thấy mình đang tụt hậu." },
+                            { en: "But there was one strange thing. Duy spent hours worrying. Yet he spent no time learning.", vi: "Nhưng có một điều kỳ lạ. Duy dành hàng giờ đồng hồ để lo lắng. Nhưng anh lại không dành chút thời gian nào để học hỏi." },
+                            { en: "He kept consuming news about AI. Kept feeling afraid. Kept imagining the worst possible future.", vi: "Anh cứ tiếp tục xem tin tức về AI. Tiếp tục cảm thấy sợ hãi. Tiếp tục tưởng tượng ra một tương lai tồi tệ nhất có thể." },
+                            { en: "Until one day, his company organized a training session. The speaker asked everyone in the room: “Who here is afraid of AI?”", vi: "Cho đến một ngày, công ty anh tổ chức một buổi đào tạo. Diễn giả đã hỏi mọi người trong phòng: “Ở đây có ai sợ AI không?”" },
+                            { en: "Almost everyone raised a hand. Duy did too. The speaker smiled and said: “AI will not take your job.”", vi: "Gần như tất cả mọi người đều giơ tay. Duy cũng vậy. Diễn giả mỉm cười và nói: “AI sẽ không cướp đi công việc của các bạn.”" },
+                            { en: "The room became silent. Then he continued: “The person who may take your job is someone who knows how to use AI better than you do.”", vi: "Căn phòng trở nên im lặng. Rồi anh tiếp tục: “Người có thể cướp đi công việc của bạn là người biết cách dùng AI giỏi hơn bạn.”" },
+                            { en: "Duy suddenly sat up straight. For the first time in months, he saw the situation differently.", vi: "Duy chợt ngồi thẳng dậy. Lần đầu tiên sau nhiều tháng, anh nhìn nhận tình hình theo một cách khác." },
+                            { en: "Maybe AI was not the enemy. Maybe it was simply a tool. And the real challenge was not fighting change. It was learning how to adapt to it.", vi: "Có lẽ AI không phải là kẻ thù. Có lẽ nó chỉ đơn thuần là một công cụ. Và thách thức thực sự không phải là chống lại sự thay đổi. Mà là học cách thích nghi với nó." },
+                            { en: "That night, instead of scrolling through frightening news, Duy took a free AI course. On the first day, he understood very little. On the second day, it still felt difficult. But he kept learning. A little every day.", vi: "Đêm đó, thay vì lướt qua những tin tức đáng sợ, Duy đã tham gia một khóa học miễn phí về AI. Ngày đầu tiên, anh hiểu rất ít. Ngày thứ hai, mọi thứ vẫn thấy khó khăn. Nhưng anh vẫn tiếp tục học. Mỗi ngày một chút." },
+                            { en: "One week. One month. Then three months. Gradually, Duy learned how to use AI for market research. Data analysis. Content creation. Tasks that once took three hours now took only one.", vi: "Một tuần. Một tháng. Rồi ba tháng. Dần dần, Duy học được cách sử dụng AI cho nghiên cứu thị trường. Phân tích dữ liệu. Sáng tạo nội dung. Những công việc từng mất ba tiếng giờ chỉ mất một tiếng." },
+                            { en: "The surprising part was that the company did not fire him. Instead, his performance improved significantly.", vi: "Điều đáng ngạc nhiên là công ty không sa thải anh. Thay vào đó, hiệu suất làm việc của anh đã cải thiện đáng kể." },
+                            { en: "One year later, Duy was assigned to lead a new project involving AI applications in marketing.", vi: "Một năm sau, Duy được giao nhiệm vụ dẫn dắt một dự án mới liên quan đến ứng dụng AI trong tiếp thị." },
+                            { en: "During the project's first meeting, he remembered the fear he once had. The fear that had kept him awake at night. The fear that had convinced him his future was over. But in the end, the thing that changed his life was not AI. It was the decision to stop being afraid and start learning.", vi: "Trong cuộc họp đầu tiên của dự án, anh nhớ lại nỗi sợ hãi mà mình từng có. Nỗi sợ hãi đã khiến anh mất ngủ cả đêm. Nỗi sợ hãi đã khiến anh tin rằng tương lai của mình đã chấm dứt. Nhưng cuối cùng, điều thay đổi cuộc đời anh không phải là AI. Mà chính là quyết định ngừng sợ hãi và bắt đầu học hỏi." }
+                        ],
+                        messageEn: "Many people are afraid of being replaced by technology. But in most cases, what leaves us behind is not technology itself. It is standing still while the world keeps changing. No one knows exactly what the future will look like. But people who never stop learning will always have more opportunities than those who only worry.",
+                        messageVi: "Nhiều người lo sợ bị công nghệ thay thế. Nhưng trong hầu hết các trường hợp, điều khiến chúng ta bị bỏ lại phía sau không phải là bản thân công nghệ. Mà là việc đứng yên trong khi thế giới không ngừng thay đổi. Không ai biết chính xác tương lai sẽ ra sao. Nhưng những người không ngừng học hỏi sẽ luôn có nhiều cơ hội hơn những người chỉ biết lo lắng.",
+                        vocabulary: [
+                            { en: "Headline", vi: "Tiêu đề bài báo, tiêu đề tin tức", partOfSpeech: "noun", example: "He read an article with a shocking headline." },
+                            { en: "Anxious", vi: "Lo âu, bồn chồn", partOfSpeech: "adjective", example: "The more he watched, the more anxious he became." },
+                            { en: "Adapt", vi: "Thích nghi", partOfSpeech: "verb", example: "The real challenge is learning how to adapt to change." },
+                            { en: "Frightening", vi: "Đáng sợ, kinh sợ", partOfSpeech: "adjective", example: "He stopped reading frightening news about technology." }
+                        ],
+                        quiz: {
+                            question: "Lời khẳng định đắt giá nào của diễn giả đã hoàn toàn thay đổi suy nghĩ lo sợ của Duy về AI?",
+                            options: [
+                                "AI sẽ không bao giờ hoạt động hiệu quả được bằng con người.",
+                                "AI sẽ không cướp đi công việc của bạn; chính người biết sử dụng AI giỏi hơn bạn mới làm điều đó.",
+                                "Mọi người nên bỏ việc và chuyển sang phát triển công nghệ AI.",
+                                "Chính phủ sẽ ban hành luật cấm hoàn toàn trí tuệ nhân tạo."
+                            ],
+                            correctAnswer: 1,
+                            explanation: "Diễn giả giải thích AI chỉ là công cụ hỗ trợ, người biết làm chủ công nghệ ấy mới là người tạo lợi thế và vượt lên người dậm chân tại chỗ."
+                        }
+                    },
+                    {
+                        category: "Cuộc sống hiện đại",
+                        titleEn: "CONSUMER DEBT: THE NEW PHONE",
+                        titleVi: "NỢ TIÊU DÙNG: CHIẾC ĐIỆN THOẠI MỚI",
+                        illustrationTitle: "Cạm bẫy trả góp",
+                        illustrationDesc: "Hộp điện thoại mới bóng bẩy trên nền núi nợ nần tiêu dùng, minh chứng cho việc mua sắm chỉ để tạo hào nhoáng bên ngoài.",
+                        illustration: `<svg viewBox="0 0 100 100" class="w-full h-full text-indigo-500" fill="none" stroke="currentColor" stroke-width="2"><rect x="35" y="20" width="30" height="60" rx="4"/><path d="M40 70h20" stroke-linecap="round"/><circle cx="50" cy="50" r="8" fill="currentColor"/><path d="M20 30l10-10M80 30l-10-10" stroke-width="1.5"/></svg>`,
+                        paragraphs: [
+                            { en: "Phuc had just received his first salary after graduating from university. Holding the money he had earned himself, he felt incredibly proud.", vi: "Phúc vừa nhận được khoản lương đầu tiên sau khi tốt nghiệp đại học. Cầm trên tay số tiền do chính mình kiếm được, anh cảm thấy vô cùng tự hào." },
+                            { en: "Throughout his student years, he had dreamed about this moment. The day he could buy the things he wanted. The day he would no longer need to ask his parents for money.", vi: "Suốt những năm tháng sinh viên, anh đã mơ về khoảnh khắc này. Ngày mà anh có thể mua những thứ mình muốn. Ngày mà anh không còn cần phải xin tiền bố mẹ nữa." },
+                            { en: "That evening, Phuc was scrolling through social media. His friends kept posting photos of their new phones. Some were showing off smart watches. Others were showing off brand-new motorbikes.", vi: "Tối hôm đó, Phúc đang lướt mạng xã hội. Bạn bè anh liên tục đăng ảnh những chiếc điện thoại mới của họ. Một số khoe đồng hồ thông minh. Một số khác khoe những chiếc xe máy mới toanh." },
+                            { en: "Looking at those polished photos, Phuc suddenly felt that his old phone was outdated. Even though it still worked perfectly. Even though the battery lasted all day. Even though it had never broken down. Still, he thought: “I have a job now. I deserve a better phone.”", vi: "Nhìn những bức ảnh bóng bẩy đó, Phúc bỗng cảm thấy chiếc điện thoại cũ của mình đã lỗi thời. Dù nó vẫn hoạt động hoàn hảo. Dù pin vẫn dùng được cả ngày. Dù nó chưa bao giờ hỏng hóc. Tuy nhiên, anh vẫn nghĩ: “Giờ mình đã có việc làm rồi. Mình xứng đáng có một chiếc điện thoại tốt hơn.”" },
+                            { en: "The next day, Phuc walked into an electronics store. At first, he only wanted to look around. But then a salesperson introduced the latest model. A better screen. A sharper camera. A more premium design.", vi: "Ngày hôm sau, Phúc bước vào một cửa hàng điện tử. Ban đầu, anh chỉ muốn xem quanh thôi. Nhưng rồi một nhân viên bán hàng giới thiệu mẫu máy mới nhất. Màn hình tốt hơn. Camera sắc nét hơn. Thiết kế cao cấp hơn." },
+                            { en: "The price was almost equal to three months of his salary. Seeing Phuc hesitate, the salesperson smiled and said: “You can pay in installments.” Phuc nodded. “It's only a few million each month.” He convinced himself.", vi: "Giá gần bằng ba tháng lương của anh. Thấy Phúc do dự, nhân viên bán hàng mỉm cười và nói: “Anh có thể trả góp.” Phúc gật đầu. “Mỗi tháng chỉ vài triệu thôi.” Anh tự thuyết phục bản thân." },
+                            { en: "During the first few weeks, he was extremely excited. He took photos. Posted online. Read every compliment in the comments. Whenever someone asked about his new phone, he felt proud.", vi: "Trong vài tuần đầu, anh cực kỳ phấn khích. Anh chụp ảnh. Đăng lên mạng. Đọc từng lời khen trong phần bình luận. Mỗi khi ai đó hỏi về chiếc điện thoại mới của mình, anh lại cảm thấy tự hào." },
+                            { en: "But only a few weeks later, the excitement disappeared. The new phone became normal. Yet the monthly payments remained.", vi: "Nhưng chỉ vài tuần sau, sự phấn khích ấy đã biến mất. Chiếc điện thoại mới trở nên bình thường. Tuy nhiên, các khoản thanh toán hàng tháng vẫn còn đó." },
+                            { en: "Then Phuc bought new headphones. A new watch. A more expensive laptop. Every purchase made him happy. But the happiness lasted only a few days. Then he felt something was missing again.", vi: "Rồi Phúc mua một chiếc tai nghe mới. Một chiếc đồng hồ mới. Một chiếc laptop đắt tiền hơn. Mỗi lần mua sắm đều khiến anh cảm thấy hạnh phúc. Nhưng niềm hạnh phúc đó chỉ kéo dài được vài ngày. Rồi anh lại cảm thấy thiếu thiếu cái gì đó." },
+                            { en: "A year passed. Phuc owned more things than ever before. But his bank account was nearly empty. Every payday, a large portion of his income went toward consumer debt. He began to feel stressed.", vi: "Một năm trôi qua. Phúc sở hữu nhiều đồ đạc hơn bao giờ hết. Nhưng tài khoản ngân hàng của anh lại gần như trống rỗng. Cứ đến ngày lãnh lương, một phần lớn thu nhập của anh lại dùng để trả nợ tiêu dùng. Anh bắt đầu cảm thấy căng thẳng." },
+                            { en: "One evening near the end of the month, Phuc reviewed all of his spending. The numbers appeared on his computer screen. When he saw the total amount he had spent during the year, he was stunned.", vi: "Một buổi tối gần cuối tháng, Phúc xem lại toàn bộ chi tiêu của mình. Các con số hiện lên trên màn hình máy tính. Khi nhìn thấy tổng số tiền đã chi tiêu trong năm, anh sững sờ." },
+                            { en: "If he had not bought all those things, he could have saved a significant amount of money. He could have learned new skills. He could have invested. He could have helped his family. Or simply built an emergency fund for the future.", vi: "Nếu không mua tất cả những thứ đó, anh đã có thể tiết kiệm được một khoản tiền đáng kể. Anh đã có thể học những kỹ năng mới. Anh có thể đã đầu tư. Anh có thể đã giúp đỡ gia đình. Hoặc đơn giản là xây dựng một quỹ khẩn cấp cho tương lai." },
+                            { en: "For the first time, Phuc realized a painful truth. He had not bought those things because he truly needed them. He bought them to feel successful. To earn admiration. To prove something to the world. But in the end, he was the one paying the price.", vi: "Lần đầu tiên, Phúc nhận ra một sự thật đau lòng. Anh không mua những thứ đó vì thực sự cần chúng. Anh mua chúng để cảm thấy mình thành công. Để nhận được sự ngưỡng mộ. Để chứng minh điều gì đó với thế giới. Nhưng cuối cùng, chính anh là người phải trả giá." },
+                            { en: "From that day forward, Phuc changed. Before buying anything, he asked himself: “Do I truly need this, or am I trying to impress other people?”", vi: "Từ ngày đó trở đi, Phúc đã thay đổi. Trước khi mua bất cứ thứ gì, anh tự hỏi mình: “Mình có thực sự cần thứ này không, hay mình chỉ đang cố gây ấn tượng với người khác?”" },
+                            { en: "If he still felt it was necessary after a month, he bought it. If not, he let it go. Slowly, his savings began to grow.", vi: "Nếu sau một tháng anh vẫn thấy nó cần thiết, anh sẽ mua. Nếu không, anh sẽ bỏ qua. Dần dần, khoản tiết kiệm của anh bắt đầu tăng lên." },
+                            { en: "Two years later, he used that money to join a business course. Three years later, he opened his first small business.", vi: "Hai năm sau, anh dùng số tiền đó để tham gia một khóa học kinh doanh. Ba năm sau, anh mở doanh nghiệp nhỏ đầu tiên của mình." },
+                            { en: "On opening day, Phuc looked at the old phone sitting in a drawer. He smiled. At last, he understood: The things that make people look rich... Do not always make them truly wealthy.", vi: "Vào ngày khai trương, Phúc nhìn chiếc điện thoại cũ nằm trong ngăn kéo. Anh mỉm cười. Cuối cùng, anh cũng hiểu ra: Những thứ khiến người ta trông giàu có... Không phải lúc nào cũng khiến họ thực sự giàu có." }
+                        ],
+                        messageEn: "Many people buy things they do not need... With money they do not have... To impress people who do not really care. True wealth is not measured by what you show off. It is measured by what you build and preserve for your future.",
+                        messageVi: "Nhiều người mua những thứ họ không cần... Bằng số tiền họ không có... Để gây ấn tượng với những người không thật sự quan tâm. Sự giàu có thực sự không được đo bằng những gì bạn phô trương. Nó được đo bằng những gì bạn tạo dựng và gìn giữ cho tương lai của mình.",
+                        vocabulary: [
+                            { en: "Installment", vi: "Phương thức trả góp", partOfSpeech: "noun", example: "You can buy this phone in installments." },
+                            { en: "Outdated", vi: "Lỗi thời, cũ kỹ", partOfSpeech: "adjective", example: "He thought his old phone was outdated." },
+                            { en: "Hesitate", vi: "Do dự, ngập ngừng", partOfSpeech: "verb", example: "Seeing him hesitate, the salesperson smiled." },
+                            { en: "Emergency fund", vi: "Quỹ khẩn cấp đề phòng rủi ro", partOfSpeech: "noun phrase", example: "Building an emergency fund is crucial." }
+                        ],
+                        quiz: {
+                            question: "Bài học lớn nhất về tài chính mà Phúc học được sau những áp lực của nợ tiêu dùng là gì?",
+                            options: [
+                                "Phải cố gắng kiếm nhiều tiền hơn để chi tiêu thỏa thích.",
+                                "Trả góp là phương án tốt nhất để mua những tài sản có giá trị lớn.",
+                                "Sự giàu có thực sự được đo bằng những gì bạn phô trương.",
+                                "Những thứ khiến người ta trông giàu có không phải lúc nào cũng khiến họ thực sự giàu có."
+                            ],
+                            correctAnswer: 3,
+                            explanation: "Phúc nhận ra tiền tiết kiệm tích lũy giúp anh học kinh doanh và khởi nghiệp, thay vì tiêu tán vào những đồ dùng xa xỉ phẩm chỉ để gây ấn tượng với người khác."
+                        }
+                    },
+                    {
+                        category: "Cuộc sống hiện đại",
+                        titleEn: "PUBLIC KINDNESS: THE CLEANER",
+                        titleVi: "TỬ TẾ NƠI CÔNG CỘNG: NGƯỜI LAO CÔNG",
+                        illustrationTitle: "Bàn tay ấm áp",
+                        illustrationDesc: "Sự giúp đỡ mộc mạc giữa chàng trai và người phụ nữ lao công già đã gieo mầm hạt giống tử tế chân thành.",
+                        illustration: `<svg viewBox="0 0 100 100" class="w-full h-full text-indigo-500" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 80h60" stroke-linecap="round"/><circle cx="50" cy="40" r="12"/><path d="M38 55c5 0 10 5 12 15M62 55c-5 0-10 5-12 15" stroke-width="1.5"/><path d="M45 40l5 5 10-10" stroke-linecap="round"/></svg>`,
+                        paragraphs: [
+                            { en: "On a Monday morning, the shopping mall was crowded with people. Everyone was in a hurry. Some were going to work. Some were shopping. Some were walking while staring at their phones.", vi: "Vào một sáng thứ Hai, trung tâm thương mại đông nghịt người. Ai nấy đều vội vã. Một số người đang trên đường đi làm. Một số người đang đi mua sắm. Một số người vừa đi vừa nhìn chằm chằm vào điện thoại." },
+                            { en: "An was no different. He was busy replying to a client's message while walking quickly. In his hand was a cup of freshly bought coffee.", vi: "An cũng không ngoại lệ. Anh đang bận rộn trả lời tin nhắn của khách hàng trong khi bước đi nhanh. Trong tay anh là một ly cà phê vừa mới mua." },
+                            { en: "Suddenly, he bumped into someone walking in the opposite direction. The cup fell to the floor. The lid popped off. Coffee splashed everywhere. A large puddle spread across the walkway.", vi: "Bất ngờ, anh va phải một người đang đi ngược chiều. Ly nước rơi xuống sàn. Nắp hộp bật ra. Cà phê bắn tung tóe khắp nơi. Một vũng cà phê lớn lan rộng trên lối đi." },
+                            { en: "An froze for a few seconds. His first instinct was to walk away. After all, someone would clean it up. He looked around. Nobody seemed to notice. People simply kept walking as if nothing had happened.", vi: "An sững lại trong vài giây. Bản năng đầu tiên của anh là bỏ đi. Dù sao thì cũng sẽ có người dọn dẹp thôi. Anh nhìn xung quanh. Dường như chẳng ai để ý. Mọi người cứ tiếp tục đi như thể chẳng có chuyện gì xảy ra." },
+                            { en: "At that moment, an elderly woman in a cleaner's uniform hurried over. She was carrying a mop and an old plastic bucket. She bent down, quietly cleaning every drop of coffee from the floor.", vi: "Đúng lúc đó, một người phụ nữ lớn tuổi mặc đồng phục lao công vội vã đi tới. Bà cầm theo một cây chổi lau nhà và một cái xô nhựa cũ. Bà cúi xuống, lặng lẽ lau sạch từng giọt cà phê trên sàn." },
+                            { en: "An suddenly noticed the calluses on her hands. Her back was slightly bent. Sweat covered her forehead even though the air conditioning was running strongly.", vi: "An bỗng nhận ra những vết chai sần trên bàn tay bà. Lưng bà hơi còng. Mồ hôi lấm tấm trên trán bà dù điều hòa đang chạy rất mạnh." },
+                            { en: "A group of people walked past. Not a single one looked at her. At that moment, An felt ashamed. He thought about his mother. What if his mother had this job? Would people walk past her the same way?", vi: "Một nhóm người đi ngang qua. Chẳng có lấy một người nhìn bà. Lúc đó, An cảm thấy xấu hổ. Anh nghĩ về mẹ mình. Nếu mẹ anh làm công việc này thì sao? Liệu mọi người có đi ngang qua bà ấy giống như vậy không?" },
+                            { en: "An quickly ran to a nearby convenience store. He bought a pack of tissues. Then he returned and knelt down beside the woman to help clean the remaining coffee.", vi: "An nhanh chóng chạy đến một cửa hàng tiện lợi gần đó. Anh mua một gói khăn giấy. Rồi anh quay lại và quỳ xuống bên cạnh người phụ nữ để giúp lau sạch phần cà phê còn lại." },
+                            { en: "The woman looked surprised. “It's okay, son. I can handle it.” An smiled and replied: “But I was the one who spilled it.”", vi: "Người phụ nữ trông có vẻ ngạc nhiên. “Không sao đâu con, bác tự làm được rồi.” An mỉm cười và đáp: “Nhưng chính con là người làm đổ mà.”" },
+                            { en: "The two of them cleaned together for a few minutes. When they finished, the woman looked at him and said: “Thank you.” Just two simple words. Yet somehow, they warmed his heart.", vi: "Hai người cùng nhau lau dọn trong vài phút. Khi xong việc, người phụ nữ nhìn anh và nói: “Cảm ơn con.” Chỉ hai từ đơn giản. Nhưng không hiểu sao, chúng lại sưởi ấm trái tim anh." },
+                            { en: "The entire day, those words stayed in his mind. That evening, he told the story to his younger sister. She smiled and said: “You know, people may not remember how rich or successful you were. But they will remember how you treated them.”", vi: "Suốt cả ngày hôm đó, những lời ấy cứ quanh quẩn trong tâm trí anh. Tối hôm đó, anh kể lại câu chuyện cho em gái nghe. Cô mỉm cười và nói: “Anh biết đấy, mọi người có thể không nhớ anh từng giàu có hay thành công ra sao. Nhưng họ sẽ nhớ cách anh đã đối xử với họ.”" },
+                            { en: "An fell silent. He realized that he had spent so much time chasing success. Yet he had forgotten that kindness is also a form of success.", vi: "An im lặng. Anh nhận ra mình đã dành quá nhiều thời gian để theo đuổi thành công. Nhưng anh đã quên mất rằng sự tử tế cũng là một dạng thành công." },
+                            { en: "A kind of success that requires no degree. No money. But can make someone else's day a little better.", vi: "Một kiểu thành công không cần bằng cấp. Không cần tiền bạc. Nhưng lại có thể khiến ngày hôm đó của một người khác trở nên tốt đẹp hơn một chút." },
+                            { en: "From that day on, An paid more attention to the people around him. He thanked security guards. Smiled at cashiers. Helped elderly people carry their bags. Small actions. But they made life feel much warmer.", vi: "Từ ngày đó, An chú ý nhiều hơn đến những người xung quanh mình. Anh cảm ơn các nhân viên bảo vệ. Mỉm cười với các nhân viên thu ngân. Giúp đỡ những người lớn tuổi xách túi đồ. Những hành động nhỏ bé. Nhưng chúng khiến cuộc sống cảm thấy ấm áp hơn nhiều." },
+                            { en: "And An finally understood: A better society is not built by grand achievements alone. It is built by thousands of small acts of kindness every single day.", vi: "Và An cuối cùng đã hiểu ra: Một xã hội tốt đẹp hơn không chỉ được xây dựng bằng những thành tựu vĩ đại. Nó được tạo nên bởi hàng ngàn hành động tử tế nhỏ bé mỗi ngày." }
+                        ],
+                        messageEn: "Never underestimate the power of kindness. A thank you, a smile, or a small helping hand can mean more to someone than you realize. Be kind to everyone, especially those whom society often overlooks.",
+                        messageVi: "Đừng bao giờ đánh giá thấp sức mạnh của sự tử tế. Một lời cảm ơn, một nụ cười hay một sự giúp đỡ nhỏ bé có thể có ý nghĩa với ai đó nhiều hơn bạn tưởng. Hãy tử tế với tất cả mọi người, đặc biệt là những người mà xã hội thường hay bỏ quên.",
+                        vocabulary: [
+                            { en: "Bump", vi: "Va mạnh vào, đâm sầm", partOfSpeech: "verb", example: "He bumped into someone walking in the opposite direction." },
+                            { en: "Instinct", vi: "Bản năng, trực giác", partOfSpeech: "noun", example: "His first instinct was to walk away." },
+                            { en: "Ashamed", vi: "Xấu hổ, ngượng ngùng", partOfSpeech: "adjective", example: "At that moment, An felt ashamed." },
+                            { en: "Underestimate", vi: "Đánh giá thấp, coi nhẹ", partOfSpeech: "verb", example: "Never underestimate the power of kindness." }
+                        ],
+                        quiz: {
+                            question: "Điều gì đã khiến An dập tắt bản năng ban đầu là bỏ đi để quay lại giúp bà cụ dọn dẹp bãi cà phê đổ?",
+                            options: [
+                                "Do sếp của anh đi ngang qua và nhìn thấy.",
+                                "Bà cụ đã lớn tiếng gọi anh lại yêu cầu dọn dẹp.",
+                                "Anh nhìn thấy đôi bàn tay chai sần, tấm lưng còng đầy mồ hôi của bà cụ và chợt nghĩ về mẹ của chính mình.",
+                                "Do anh sợ sẽ bị trung tâm thương mại xử phạt tiền."
+                            ],
+                            correctAnswer: 2,
+                            explanation: "Hình ảnh lao động vất vả của bà cụ lao công khiến An liên tưởng sâu sắc đến mẹ của mình, khơi dậy lòng thấu cảm sâu sắc ẩn giấu."
+                        }
+                    },
+                    {
+                        category: "Kỳ bí & Cuốn hút",
+                        titleEn: "THE VILLAGE WITHOUT DAWN",
+                        titleVi: "NGÔI LÀNG KHÔNG CÓ BÌNH MINH",
+                        illustrationTitle: "Màn đêm vĩnh cửu",
+                        illustrationDesc: "Những ngôi nhà gỗ chìm trong sương mù dày đặc và bầu trời sao đứng im, bất dịch mặc cho đồng hồ đã chuyển sang ngày mới.",
+                        illustration: `<svg viewBox="0 0 100 100" class="w-full h-full text-rose-500" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 75V55l15-15 15 15v20M50 75V50l15-15 15 15v25" stroke-linecap="round"/><circle cx="50" cy="20" r="4" fill="currentColor"/><circle cx="20" cy="25" r="1.5" fill="currentColor" class="animate-ping"/><circle cx="80" cy="25" r="1.5" fill="currentColor"/></svg>`,
+                        paragraphs: [
+                            { en: "Five university students decided to spend their summer exploring an abandoned mountain trail that few people dared to visit. The villagers at the foot of the mountain tried to stop them.", vi: "Năm sinh viên đại học quyết định dành kỳ nghỉ hè để khám phá một con đường mòn trên núi bị bỏ hoang mà ít ai dám đến. Người dân ở chân núi đã cố gắng ngăn cản họ." },
+                            { en: "An old woman grabbed one of the students by the arm and whispered: “If you see a village where the lanterns are still lit after midnight, do not go inside.”", vi: "Một bà lão nắm lấy cánh tay của một trong số các sinh viên và thì thầm: “Nếu cháu nhìn thấy một ngôi làng nơi đèn lồng vẫn còn sáng sau nửa đêm, đừng đi vào trong.”" },
+                            { en: "The students laughed politely. They thought it was only another old folktale meant to scare strangers.", vi: "Các sinh viên cười một cách lịch sự. Họ nghĩ đó chỉ là một câu chuyện dân gian dùng để dọa người lạ." },
+                            { en: "Late that afternoon, heavy fog covered the mountain. The narrow path disappeared before their eyes.", vi: "Chiều muộn hôm đó, sương mù dày đặc bao phủ cả ngọn núi. Con đường hẹp biến mất trước mắt họ." },
+                            { en: "After walking for nearly two hours, they suddenly saw warm lights shining through the mist. A small village stood quietly among the trees.", vi: "Sau gần hai tiếng đồng hồ đi bộ, họ bất ngờ nhìn thấy những ánh sáng ấm áp chiếu xuyên qua màn sương. Một ngôi làng nhỏ nằm yên bình giữa những rặng cây." },
+                            { en: "The houses looked old but well cared for. Smoke rose gently from the kitchens. Children ran across the road. Everything seemed peaceful.", vi: "Những ngôi nhà trông cũ kỹ nhưng được chăm sóc cẩn thận. Khói bốc lên nhẹ nhàng từ các gian bếp. Trẻ con chạy qua đường. Mọi thứ dường như rất bình yên." },
+                            { en: "The villagers welcomed the students with friendly smiles and invited them to stay for the night. Since the group was exhausted, they gladly accepted.", vi: "Dân làng chào đón những sinh viên bằng nụ cười thân thiện và mời họ ở lại qua đêm. Vì cả nhóm đều đã kiệt sức, họ vui vẻ nhận lời." },
+                            { en: "After dinner, one of the students looked at his watch. It was 11:48 p.m. He smiled and said: “We should get some sleep. It will be morning soon.”", vi: "Sau bữa tối, một sinh viên nhìn vào đồng hồ của mình. Lúc đó là 11 giờ 48 phút đêm. Anh mỉm cười và nói: “Chúng ta nên đi ngủ thôi. Sắp sáng rồi đấy.”" },
+                            { en: "An elderly villager looked at him with a strange expression. “There is no morning here,” the old man replied softly.", vi: "Một cụ già trong làng nhìn anh với một biểu cảm rất kỳ lạ. “Ở đây không có bình minh đâu,” ông lão trả lời nhỏ nhẹ." },
+                            { en: "Everyone laughed, thinking he was joking.", vi: "Mọi người đều bật cười, nghĩ rằng ông cụ đang nói đùa." },
+                            { en: "The next time they checked their watches, it was 6:30 a.m. Yet outside, the sky was still completely dark.", vi: "Lần tiếp theo họ kiểm tra đồng hồ, lúc đó đã là 6 giờ 30 phút sáng. Thế nhưng bên ngoài, bầu trời vẫn hoàn toàn tối tăm." },
+                            { en: "The stars remained overhead. The moon had not moved. Not a single bird was singing.", vi: "Những vì sao vẫn ở trên đầu. Mặt trăng không hề dịch chuyển. Không có lấy một tiếng chim hót." },
+                            { en: "One student thought his watch had stopped working. Another checked his phone. The time was exactly the same.", vi: "Một sinh viên nghĩ rằng đồng hồ của mình đã bị hỏng. Một người khác kiểm tra điện thoại. Thời gian đều giống hệt nhau." },
+                            { en: "Even stranger, every clock in the village showed morning. Only the sky refused to change. They decided to leave immediately.", vi: "Điều kỳ lạ hơn nữa là, mọi chiếc đồng hồ trong làng đều chỉ buổi sáng. Chỉ có bầu trời là từ chối thay đổi. Họ quyết định rời đi ngay lập tức." },
+                            { en: "However, every path they followed brought them back to the same stone well in the center of the village. No matter which direction they chose, they always returned to that well.", vi: "Tuy nhiên, mỗi con đường họ đi theo đều dẫn họ quay trở lại đúng chiếc giếng đá ở trung tâm ngôi làng. Dù họ chọn hướng nào đi chăng nữa, họ vẫn luôn quay về chiếc giếng đó." },
+                            { en: "After several failed attempts, panic began to spread through the group.", vi: "Sau vài lần thất bại, sự hoảng loạn bắt đầu lan rộng trong cả nhóm." },
+                            { en: "That evening, the village chief gathered everyone together. He spoke calmly: “You may stay as long as you wish. But remember one rule: When you hear a rooster crow... close your eyes immediately. No matter what happens... do not open them.”", vi: "Tối hôm đó, trưởng làng tập hợp mọi người lại với nhau. Ông nói một cách bình tĩnh: “Các cậu có thể ở lại bao lâu tùy thích. Nhưng hãy nhớ kỹ một quy tắc: Khi các cậu nghe thấy tiếng gà gáy... hãy nhắm mắt lại ngay lập tức. Dù có chuyện gì xảy ra đi nữa... cũng không được mở mắt ra.”" },
+                            { en: "One of the students asked: “What will happen if we do?” The old man remained silent.", vi: "Một trong các sinh viên hỏi: “Điều gì sẽ xảy ra nếu chúng cháu mở mắt?” Ông lão giữ im lặng." },
+                            { en: "That night, nobody could sleep. Around what their watches said was four o'clock in the morning, the sound of a rooster echoed across the village. It crowed only once.", vi: "Đêm đó, không một ai có thể ngủ. Vào khoảng bốn giờ sáng theo đồng hồ của họ, tiếng gà gáy vang vọng khắp ngôi làng. Nó chỉ gáy đúng một lần." },
+                            { en: "The students quickly closed their eyes. For several long seconds, everything was silent.", vi: "Các sinh viên nhanh chóng nhắm mắt lại. Trong vài giây dài đằng đẵng, mọi thứ chìm trong im lặng." },
+                            { en: "Then footsteps appeared. Slow. Heavy. Dozens of footsteps. They stopped just outside the house. Someone was breathing. Very close.", vi: "Rồi những tiếng bước chân xuất hiện. Chậm rãi. Nặng nề. Hàng chục tiếng bước chân. Chúng dừng lại ngay bên ngoài ngôi nhà. Có ai đó đang thở. Ngay rất gần." },
+                            { en: "One student became curious. He opened one eye.", vi: "Một sinh viên trở nên tò mò. Anh hé mở một bên mắt." },
+                            { en: "Outside the window stood every villager. None of them blinked. None of them moved. They were all staring directly at the house.", vi: "Bên ngoài cửa sổ, toàn bộ dân làng đang đứng đó. Không một ai chớp mắt. Không một ai cử động. Tất cả họ đều đang nhìn chằm chằm trực tiếp vào ngôi nhà." },
+                            { en: "Among them stood someone else. It was one of the students. But he was supposed to be inside the room. His face was pale. His eyes were completely black. And he was smiling.", vi: "Ở giữa họ có một người khác đang đứng cùng. Đó chính là một trong các sinh viên. Nhưng đáng lẽ ra cậu ấy phải ở trong phòng mới đúng. Gương mặt cậu ta nhợt nhạt. Đôi mắt hoàn toàn là một màu đen kịt. Và cậu ta đang mỉm cười." },
+                            { en: "The terrified student screamed. Everyone opened their eyes. The villagers vanished instantly. Only silence remained.", vi: "Người sinh viên kinh hãi hét lên. Mọi người đều mở mắt ra. Dân làng biến mất ngay lập tức. Chỉ còn lại sự im lặng." },
+                            { en: "The next morning, if it could still be called morning, one member of the group was missing. His backpack was still beside his bed. His shoes were still on the floor. But he had disappeared without leaving a single trace.", vi: "Sáng hôm sau, nếu vẫn có thể gọi đó là buổi sáng, một thành viên trong nhóm đã mất tích. Balo của cậu ấy vẫn nằm cạnh giường. Giày của cậu ấy vẫn ở trên sàn. Nhưng cậu ấy đã biến mất không để lại một dấu vết nào." },
+                            { en: "The remaining four searched the entire village. No one had seen him. The villagers simply shook their heads: “He has already become one of us.”", vi: "Bốn người còn lại tìm kiếm khắp cả ngôi làng. Không ai nhìn thấy cậu ấy. Dân làng chỉ lắc đầu: “Cậu ta đã trở thành một phần của chúng tôi rồi.”" },
+                            { en: "Three days later, the survivors finally found a narrow path leading out of the mountains. When they reached the nearest town, they rushed to a police station. The officers looked confused: “You've only been missing for twelve minutes.”", vi: "Ba ngày sau, những người sống sót cuối cùng cũng tìm thấy một con đường hẹp dẫn ra khỏi núi. Khi đến thị trấn gần nhất, họ vội vã chạy đến đồn cảnh sát. Các cảnh sát trông có vẻ bối rối: “Các cậu mới mất tích được mười hai phút thôi mà.”" },
+                            { en: "The students stared at each other in disbelief. For them, three endless nights had passed.", vi: "Các sinh viên nhìn nhau không tin nổi. Đối với họ, ba đêm dài đằng đẵng đã trôi qua." },
+                            { en: "The police showed them a group photo taken before they entered the mountains. At first, everything looked normal. Then one of them noticed something horrifying. There were six people in the picture. Not five.", vi: "Cảnh sát cho họ xem một bức ảnh tập thể chụp trước khi họ vào núi. Lúc đầu, mọi thứ trông bình thường. Thế rồi một người trong số họ phát hiện ra điều kinh hoàng. Trong bức ảnh có sáu người. Chứ không phải năm." },
+                            { en: "Standing quietly in the middle of the group was a young man wearing old-fashioned village clothes. He was smiling. None of the survivors recognized his face. But each of them felt exactly the same strange certainty: He had walked beside them... the entire time.", vi: "Đứng lặng lẽ ở ngay chính giữa nhóm là một chàng trai trẻ mặc bộ quần áo làng quê kiểu cũ. Cậu ta đang mỉm cười. Không một ai trong số những người sống sót nhận ra gương mặt đó. Nhưng mỗi người trong họ đều cảm nhận được một sự chắc chắn kỳ lạ y như nhau: Cậu ta đã bước đi bên cạnh họ... suốt khoảng thời gian qua." }
+                        ],
+                        messageEn: "Sometimes, what appears peaceful hides a deeper trap. The flow of time is relative, and warning signs left by elders are rarely just legends.",
+                        messageVi: "Đôi khi, những gì có vẻ yên bình lại ẩn giấu cạm bẫy đáng sợ nhất. Dòng chảy của thời gian là tương đối, và những lời cảnh báo của người đi trước hiếm khi chỉ là truyền thuyết.",
+                        vocabulary: [
+                            { en: "Abandoned", vi: "Bị hoang phế, bỏ hoang", partOfSpeech: "adjective", example: "They walked on an abandoned mountain trail." },
+                            { en: "Fog", vi: "Sương mù", partOfSpeech: "noun", example: "Heavy fog covered the mountain." },
+                            { en: "Vanish", vi: "Biến mất, tiêu tan", partOfSpeech: "verb", example: "The villagers vanished instantly." },
+                            { en: "Trace", vi: "Dấu vết, vết tích", partOfSpeech: "noun", example: "He disappeared without leaving a single trace." }
+                        ],
+                        quiz: {
+                            question: "Khoảng thời gian thực tế mà nhóm sinh viên mất tích theo lời cảnh sát ở thị trấn là bao lâu?",
+                            options: [
+                                "Ba đêm dài đằng đẵng.",
+                                "Một tuần lễ.",
+                                "Mười hai phút.",
+                                "Họ chưa từng mất tích."
+                            ],
+                            correctAnswer: 2,
+                            explanation: "Dù trong thế giới quỷ dị của ngôi làng, nhóm sinh viên cảm thấy 3 đêm dài đã trôi qua, thế giới thực bên ngoài chỉ mới trôi qua đúng 12 phút."
+                        }
+                    },
+                    {
+                        category: "Kỳ bí & Cuốn hút",
+                        titleEn: "THE FILE OF THE VICTIM WHO WAS STILL ALIVE",
+                        titleVi: "HỒ SƠ CỦA NẠN NHÂN CHƯA CHẾT",
+                        illustrationTitle: "Phong bì định mệnh",
+                        illustrationDesc: "Hồ sơ đen tối bí ẩn dự đoán trước cái chết tương lai một cách chính xác từng giây, từng tư thế nằm.",
+                        illustration: `<svg viewBox="0 0 100 100" class="w-full h-full text-rose-500" fill="none" stroke="currentColor" stroke-width="2"><rect x="25" y="25" width="50" height="60" rx="3"/><path d="M25 35l25 15 25-15M40 55h20M40 65h15" stroke-linecap="round"/><circle cx="50" cy="50" r="15" class="animate-pulse" stroke-width="1"/></svg>`,
+                        paragraphs: [
+                            { en: "Inspector Khanh was the best detective in the province. During more than ten years of service, he had never believed in ghosts or supernatural stories.", vi: "Thanh tra Khánh là điều tra viên giỏi nhất trong tỉnh. Trong suốt hơn mười năm công tác, anh chưa bao giờ tin vào ma quỷ hay những câu chuyện siêu nhiên." },
+                            { en: "To him, every case could be solved if enough evidence was collected. One morning, as he arrived at his office, he noticed a brown envelope lying on his desk.", vi: "Đối với anh, mọi vụ án đều có thể được phá nếu thu thập đủ bằng chứng. Một buổi sáng, khi vừa đến văn phòng, anh chú ý thấy một phong bì màu nâu nằm trên bàn làm việc." },
+                            { en: "There was no sender's name. There was no postal stamp. No one in the station knew when it had appeared.", vi: "Không có tên người gửi. Không có con dấu bưu điện. Không một ai trong đồn biết nó xuất hiện từ khi nào." },
+                            { en: "Inside was a complete investigation file. The first page clearly stated: Victim: Nguyen Van Hoa. Age: 42. Cause of death: Multiple stab wounds. Time of death: 9:00 p.m., July 18.", vi: "Bên trong là một hồ sơ điều tra hoàn chỉnh. Trang đầu tiên ghi rõ: Nạn nhân: Nguyễn Văn Hòa. Tuổi: 42. Nguyên nhân tử vong: Nhiều vết thương do bị đâm. Thời gian tử vong: 9 giờ tối, ngày 18 tháng 7." },
+                            { en: "Khanh immediately checked the population records. Nguyen Van Hoa was a real person. He owned a furniture shop and was alive and in good health.", vi: "Khánh lập tức kiểm tra hồ sơ dân cư. Nguyễn Văn Hòa là một người có thật. Ông ấy sở hữu một cửa hàng nội thất, hiện vẫn đang sống và có sức khỏe tốt." },
+                            { en: "Khanh assumed that it was nothing more than a strange prank. However, as he turned the following pages, he began to feel a chill.", vi: "Khánh cho rằng đây chẳng qua chỉ là một trò đùa quái gở. Tuy nhiên, khi lật những trang tiếp theo, anh bắt đầu cảm thấy ớn lạnh." },
+                            { en: "The file contained photographs of the crime scene. It included a floor plan of the house. It marked the exact position of the body. It even contained witness statements from the neighbors.", vi: "Hồ sơ có chứa những bức ảnh chụp hiện trường vụ án. Nó bao gồm cả sơ đồ mặt bằng của ngôi nhà. Nó đánh dấu vị trí chính xác của cái xác. Nó thậm chí còn chứa lời khai của các nhân chứng là hàng xóm." },
+                            { en: "The frightening part was this: every photograph had been taken inside a house where no murder had ever occurred.", vi: "Điều đáng sợ là ở chỗ này: mọi bức ảnh đều được chụp bên trong một ngôi nhà chưa từng xảy ra bất kỳ vụ án mạng nào." },
+                            { en: "Khanh decided to visit Mr. Hoa. He explained everything and advised him to be especially careful over the next few days. Mr. Hoa laughed: “I have never made enemies with anyone.”", vi: "Khánh quyết định đến gặp ông Hòa. Anh giải thích mọi chuyện và khuyên ông nên đặc biệt cẩn trọng trong vài ngày tới. Ông Hòa cười: “Tôi chưa từng gây thù chuốc oán với ai bao giờ.”" },
+                            { en: "Even so, Khanh remained uneasy. He secretly assigned two police officers to watch Mr. Hoa's house day and night. Three days passed. Nothing unusual happened.", vi: "Dù vậy, Khánh vẫn cảm thấy bất an. Anh bí mật phân công hai cảnh sát canh gác ngôi nhà của ông Hòa cả ngày lẫn đêm. Ba ngày qua. Không có điều gì bất thường xảy ra." },
+                            { en: "On the evening of July 18, at exactly 8:45 p.m., Khanh was also present at Mr. Hoa's house. Everything was quiet. The doors were locked. There were no signs of forced entry. Khanh began to believe that the mysterious file had been a hoax.", vi: "Vào tối ngày 18 tháng 7, đúng 8 giờ 45 phút, Khánh cũng có mặt tại nhà ông Hòa. Mọi thứ đều yên tĩnh. Các cửa đều đã được khóa chặt. Không có dấu hiệu nào của việc đột nhập. Khánh bắt đầu tin rằng bộ hồ sơ bí ẩn kia chỉ là một trò lừa bịp." },
+                            { en: "Exactly at 9:00 p.m., the electricity suddenly went out.", vi: "Đúng vào lúc 9 giờ tối, điện đột ngột vụt tắt." },
+                            { en: "Only a few seconds later, a scream echoed through the house. The officers immediately forced the door open. Mr. Hoa was lying in the middle of the living room. His body was in the exact position shown in the file.", vi: "Chỉ vài giây sau, một tiếng thét vang dội khắp ngôi nhà. Các cảnh sát lập tức phá cửa xông vào. Ông Hòa đang nằm gục giữa phòng khách. Cơ thể ông nằm ở chính xác vị trí được chụp trong hồ sơ." },
+                            { en: "The stab wounds matched the autopsy report perfectly. The killer had disappeared. No one saw how the murderer entered the house.", vi: "Các vết đâm trùng khớp hoàn hảo với báo cáo khám nghiệm tử thi. Kẻ sát nhân đã biến mất. Không một ai nhìn thấy hung thủ đã vào nhà bằng cách nào." },
+                            { en: "After the investigation ended, Khanh returned to his office to complete the final report. On his desk... another brown envelope had appeared. Inside was a new investigation file.", vi: "Sau khi cuộc điều tra kết thúc, Khánh trở về văn phòng để hoàn tất báo cáo cuối cùng. Trên bàn làm việc của anh... một phong bì màu nâu khác đã xuất hiện. Bên trong là một hồ sơ điều tra mới." },
+                            { en: "He opened the first page. His hands began to tremble: Victim: Inspector Tran Khanh. Below the name was a photograph of the crime scene.", vi: "Anh mở trang đầu tiên ra. Đôi bàn tay anh bắt đầu run rẩy: Nạn nhân: Thanh tra Trần Khánh. Ngay phía dưới cái tên là bức ảnh chụp hiện trường vụ án." },
+                            { en: "Khanh was lying on the office floor. His eyes were still open. And behind him... stood a shadowy figure with a faint smile.", vi: "Khánh đang nằm gục trên sàn văn phòng. Đôi mắt anh vẫn mở trừng trừng. Và ở phía sau anh... là một bóng người mờ ảo với nụ cười nhạt." },
+                            { en: "Khanh immediately turned around. There was no one behind him.", vi: "Khánh lập tức quay người lại. Không có một ai ở phía sau anh cả." },
+                            { en: "But the next morning... his colleagues found the office locked from the inside. Inspector Khanh... had become the final victim in his own case file.", vi: "Nhưng vào sáng hôm sau... các đồng nghiệp của anh phát hiện văn phòng bị khóa từ bên trong. Thanh tra Khánh... đã trở thành nạn nhân cuối cùng trong chính hồ sơ vụ án của mình." }
+                        ],
+                        messageEn: "We cannot escape a script already written by unseen forces. Sometimes, looking into the abyss makes the abyss lock onto you.",
+                        messageVi: "Chúng ta không thể trốn tránh một kịch bản đã được định đoạt sẵn bởi những thế lực vô hình. Đôi khi, nhìn sâu vào bóng tối sẽ khiến bóng tối nhắm lấy chính bạn.",
+                        vocabulary: [
+                            { en: "Envelope", vi: "Phong bì, bao thư", partOfSpeech: "noun", example: "He noticed a brown envelope on his desk." },
+                            { en: "Autopsy", vi: "Mổ tử thi, khám nghiệm tử thi", partOfSpeech: "noun", example: "The wounds matched the autopsy report perfectly." },
+                            { en: "Hoax", vi: "Trò lừa bịp, tin giả", partOfSpeech: "noun", example: "He believed the mysterious file was a hoax." },
+                            { en: "Shadowy", vi: "Mờ ảo, như một bóng ma", partOfSpeech: "adjective", example: "Behind him stood a shadowy figure." }
+                        ],
+                        quiz: {
+                            question: "Điều khủng khiếp gì ghi trên trang đầu của tập hồ sơ phong bì màu nâu thứ hai?",
+                            options: [
+                                "Sơ đồ trốn chạy của hung thủ giết ông Hòa.",
+                                "Tên nạn nhân tiếp theo chính là Thanh tra Trần Khánh.",
+                                "Chứng cứ vạch trần kẻ tống tiền sở cảnh sát.",
+                                "Hồ sơ vụ án của một kẻ giết người hàng loạt."
+                            ],
+                            correctAnswer: 1,
+                            explanation: "Phong bì thứ hai xuất hiện ghi rõ nạn nhân mới là chính Thanh tra Trần Khánh, miêu tả tư thế tử vong của anh ngay trên sàn phòng làm việc."
+                        }
+                    },
+                    {
+                        category: "Kỳ bí & Cuốn hút",
+                        titleEn: "THE MAN WHO NEVER SLEPT",
+                        titleVi: "NGƯỜI ĐÀN ÔNG KHÔNG BAO GIỜ NGỦ",
+                        illustrationTitle: "Cơn ác mộng tiếp diễn",
+                        illustrationDesc: "Thời khắc 3:17 sáng báo hiệu sự dịch chuyển không tưởng giữa thực và ảo, khi bóng dáng người phụ nữ mặc đồ trắng xuất hiện sau lưng.",
+                        illustration: `<svg viewBox="0 0 100 100" class="w-full h-full text-rose-500" fill="none" stroke="currentColor" stroke-width="2"><path d="M50 15v70M15 50h70" stroke-dasharray="2 2"/><circle cx="50" cy="50" r="35"/><path d="M50 50l15-15M50 50v25" stroke-linecap="round"/><circle cx="50" cy="50" r="4" fill="currentColor"/><text x="40" y="30" fill="currentColor" font-size="8" font-family="monospace">3:17</text></svg>`,
+                        paragraphs: [
+                            { en: "People often say that sleep restores the body and calms the mind.", vi: "Người ta thường nói rằng giấc ngủ giúp phục hồi cơ thể và làm dịu tâm trí." },
+                            { en: "However, one man became terrified of falling asleep because every time he closed his eyes, the same nightmare continued exactly where it had ended the night before.", vi: "Tuy nhiên, có một người đàn ông lại trở nên khiếp sợ việc phải đi ngủ, bởi vì mỗi lần nhắm mắt lại, cùng một cơn ác mộng lại tiếp diễn chính xác tại nơi nó vừa kết thúc vào đêm hôm trước." },
+                            { en: "At first, the dream seemed harmless. He found himself standing alone in a long, empty hallway.", vi: "Ban đầu, giấc mơ có vẻ vô hại. Anh thấy mình đang đứng một mình trong một hành lang dài và trống trải." },
+                            { en: "At the far end stood an old woman dressed entirely in white. Her long gray hair covered most of her face, and she never moved or spoke.", vi: "Ở tận cùng phía cuối hành lang là một người phụ nữ lớn tuổi mặc bộ đồ hoàn toàn màu trắng. Mái tóc bạc dài che khuất gần hết khuôn mặt bà, và bà không hề cử động hay nói năng gì." },
+                            { en: "She simply stood there, watching him in complete silence. When he woke up, he dismissed it as an ordinary nightmare.", vi: "Bà chỉ đơn giản đứng đó, nhìn chằm chằm vào anh trong sự im lặng tuyệt đối. Khi thức dậy, anh gạt phăng nó đi vì nghĩ đó chỉ là một cơn ác mộng bình thường." },
+                            { en: "The next night, the dream returned. The hallway looked exactly the same, but this time the old woman had moved one step closer. She still said nothing. She simply stared at him.", vi: "Đêm tiếp theo, giấc mơ ấy quay trở lại. Hành lang trông vẫn hoàn toàn như cũ, nhưng lần này người phụ nữ lớn tuổi đã tiến gần hơn một bước. Bà vẫn không nói gì. Bà chỉ chăm chăm nhìn anh." },
+                            { en: "Night after night, the dream continued. Each time he fell asleep, the old woman moved one step closer. Soon, he became afraid to sleep.", vi: "Đêm này qua đêm khác, giấc mơ cứ thế tiếp diễn. Mỗi lần anh chìm vào giấc ngủ, người phụ nữ ấy lại tiến gần hơn một bước. Chẳng bao lâu, anh trở nên sợ ngủ." },
+                            { en: "He drank coffee, took cold showers, and forced himself to stay awake for as long as possible.", vi: "Anh uống cà phê, tắm nước lạnh, và ép bản thân phải tỉnh táo lâu nhất có thể." },
+                            { en: "After several sleepless days, his eyes became bloodshot, his hands trembled constantly, and he began hearing strange whispers even when he was alone.", vi: "Sau nhiều ngày mất ngủ, mắt anh ta đỏ ngầu, đôi bàn tay run rẩy không ngừng, và anh ta bắt đầu nghe thấy những lời thì thầm kỳ lạ ngay cả khi chỉ có một mình." },
+                            { en: "Doctors diagnosed him with severe insomnia caused by stress. They prescribed sleeping pills and assured him that proper rest would solve the problem.", vi: "Các bác sĩ chẩn đoán anh bị mất ngủ nghiêm trọng do căng thẳng. Họ kê đơn thuốc ngủ và trấn an anh rằng nghỉ ngơi đầy đủ sẽ giải quyết được vấn đề." },
+                            { en: "Desperate and exhausted, he finally took the medicine. Within minutes, he fell asleep.", vi: "Trong cơn tuyệt vọng và kiệt sức, cuối cùng anh đã uống thuốc. Chỉ trong vài phút, anh đã chìm vào giấc ngủ." },
+                            { en: "When the dream began again, the old woman was no longer at the end of the hallway. She was standing directly in front of him.", vi: "Khi giấc mơ bắt đầu lại, người phụ nữ lớn tuổi không còn ở phía cuối hành lang nữa. Bà đang đứng ngay trước mặt anh." },
+                            { en: "For the first time, she slowly raised her head. Her face looked exactly like his own. She smiled and whispered: “Now... it's your turn to stay awake.”", vi: "Lần đầu tiên, bà chậm rãi ngẩng đầu lên. Khuôn mặt của bà trông giống hệt như khuôn mặt của chính anh. Bà mỉm cười và thì thầm: “Giờ... đến lượt mày phải thức rồi.”" },
+                            { en: "The next morning, his neighbors found him dead in his apartment. There were no signs of violence, no injuries, and no evidence of poisoning.", vi: "Sáng hôm sau, những người hàng xóm phát hiện anh đã chết trong căn hộ của mình. Không có dấu hiệu bạo lực, không có vết thương, và cũng không có bằng chứng nào cho thấy bị ngộ độc." },
+                            { en: "The police reviewed the security camera outside his apartment. No one had entered. No one had left.", vi: "Cảnh sát đã xem lại camera an ninh bên ngoài căn hộ của anh ta. Không ai vào. Không ai ra." },
+                            { en: "But at exactly 3:17 a.m., the camera captured something impossible. His apartment door slowly opened by itself. A frightened man walked out. He looked exactly like the victim.", vi: "Nhưng đúng 3 giờ 17 phút sáng, camera đã ghi lại một điều không tưởng. Cửa căn hộ của anh ta từ từ tự mở ra. Một người đàn ông hoảng sợ bước ra. Anh ta trông y hệt nạn nhân." },
+                            { en: "Moments later, an old woman dressed in white quietly stepped out behind him. They walked away together. Neither of them ever appeared on any other camera again.", vi: "Một lát sau, một người phụ nữ lớn tuổi mặc đồ trắng lặng lẽ bước ra phía sau anh ta. Họ cùng nhau bước đi. Cả hai người đều không bao giờ xuất hiện trên bất kỳ camera nào khác nữa." }
+                        ],
+                        messageEn: "The monsters in our dreams are sometimes our own souls waiting to swap places when we finally lose the strength to stay awake.",
+                        messageVi: "Những con quái vật trong giấc mơ đôi khi chính là linh hồn của ta, chờ đợi thời cơ hoán đổi vị trí khi ta không còn sức lực để thức canh phòng giữ chúng.",
+                        vocabulary: [
+                            { en: "Dismiss", vi: "Gạt đi, bỏ qua, xua đi", partOfSpeech: "verb", example: "He dismissed the dream as an ordinary nightmare." },
+                            { en: "Bloodshot", vi: "Đỏ ngầu, hằn tia máu", partOfSpeech: "adjective", example: "His eyes became bloodshot from lack of sleep." },
+                            { en: "Severe insomnia", vi: "Mất ngủ nghiêm trọng", partOfSpeech: "noun phrase", example: "Doctors diagnosed him with severe insomnia." },
+                            { en: "Prescribe", vi: "Kê đơn thuốc", partOfSpeech: "verb", example: "The doctor prescribed sleeping pills." }
+                        ],
+                        quiz: {
+                            question: "Bất ngờ ghê rợn nào hiện lên khi người phụ nữ trong giấc mơ ngẩng mặt lên trực tiếp nhìn anh ta?",
+                            options: [
+                                "Bà ta không có khuôn mặt nào cả.",
+                                "Khuôn mặt của bà ta trông giống hệt như khuôn mặt của chính anh.",
+                                "Đó chính là người mẹ quá cố của anh.",
+                                "Bà ta biến thành một quái thú rùng rợn."
+                            ],
+                            correctAnswer: 1,
+                            explanation: "Bà cụ trong hành lang ngẩng đầu lên để lộ khuôn mặt giống hệt anh ta, và hoán đổi vị trí để giam anh ta vĩnh viễn vào cơn ác mộng thức tỉnh."
+                        }
+                    },
+                    {
+                        category: "Kỳ bí & Cuốn hút",
+                        titleEn: "THE FIELD WHERE NO ONE SHOULD CALL YOUR NAME",
+                        titleVi: "CÁNH ĐỒNG KHÔNG ĐƯỢC GỌI TÊN",
+                        illustrationTitle: "Tiếng gọi từ hư vô",
+                        illustrationDesc: "Cánh đồng hoang vu lộng gió sương, nơi ranh giới mỏng manh giữa người sống và người chết bị phá vỡ chỉ bằng một câu trả lời.",
+                        illustration: `<svg viewBox="0 0 100 100" class="w-full h-full text-rose-500" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 80c20-10 30-10 50 0s20 10 30 0" stroke-linecap="round"/><path d="M30 80V50M50 85V45M70 78V55" stroke-dasharray="1 3"/><path d="M20 30a5 5 0 0110 0c0 5-5 10-5 10s-5-5-5-10" fill="none"/></svg>`,
+                        paragraphs: [
+                            { en: "The elders in my village have always warned us that after sunset, no one should ever call another person's name while walking across Reed Grave Field. No one knows when this warning first began.", vi: "Các bậc cao niên trong làng tôi luôn cảnh báo rằng sau khi mặt trời lặn, không ai được gọi tên người khác khi đi qua cánh đồng Reed Grave. Chẳng ai biết lời cảnh báo này có từ bao giờ." },
+                            { en: "People only know that more than one hundred years ago, during the rice harvest, five farmers disappeared in the middle of the field on a foggy night.", vi: "Người ta chỉ biết rằng hơn một trăm năm trước, vào mùa gặt lúa, năm người nông dân đã biến mất giữa cánh đồng vào một đêm sương mù." },
+                            { en: "The next morning, the villagers found them still standing among the rice plants. Their eyes were wide open. There were no injuries on their bodies. But every one of them was dead.", vi: "Sáng hôm sau, dân làng phát hiện họ vẫn đứng giữa những bụi lúa. Mắt họ mở to. Trên cơ thể họ không có vết thương nào. Nhưng tất cả đều đã chết." },
+                            { en: "From that day on, the field became strangely silent after dark. There were no insects. There were no frogs. Only the sound of the wind moving through the dry grass.", vi: "Kể từ ngày đó, cánh đồng trở nên im lặng một cách kỳ lạ sau khi trời tối. Không có côn trùng. Không có ếch. Chỉ có tiếng gió thổi qua đám cỏ khô." },
+                            { en: "One evening, five university students traveled from the city to the village to film a documentary about local folklore. The villagers told them the old legend, but they simply laughed.", vi: "Một buổi tối, năm sinh viên đại học đã đi từ thành phố về làng để quay một bộ phim tài liệu về văn hóa dân gian địa phương. Dân làng kể cho họ nghe truyền thuyết xưa, nhưng họ chỉ cười." },
+                            { en: "At exactly midnight, the group entered the field with their cameras. Everything seemed perfectly normal.", vi: "Đúng nửa đêm, nhóm sinh viên bước vào cánh đồng cùng máy quay của mình. Mọi thứ dường như hoàn toàn bình thường." },
+                            { en: "Then one of the students heard someone calling his name from far away. It was his mother's voice. Soft. Clear: “Manh... come home, my son.”", vi: "Rồi một trong số các sinh viên nghe thấy ai đó gọi tên mình từ xa. Đó là giọng của mẹ cậu. Nhẹ nhàng. Rõ ràng: “Mạnh... về nhà đi con.”" },
+                            { en: "He turned toward the sound, but no one was there. A few minutes later, one of the girls heard her father's voice.", vi: "Cậu quay người về phía phát ra âm thanh, nhưng chẳng có ai ở đó cả. Vài phút sau, một cô gái trong nhóm lại nghe thấy giọng của bố mình." },
+                            { en: "Another student heard the voice of his younger brother, who had died several years earlier. The strange thing was that every person heard a different voice. No two people heard the same one.", vi: "Một sinh viên khác lại nghe thấy tiếng của đứa em trai vốn đã qua đời vài năm trước. Điều kỳ lạ là mỗi người lại nghe thấy một giọng nói khác nhau. Không có hai người nào nghe cùng một giọng cả." },
+                            { en: "The group leader suddenly remembered the villagers' warning. He shouted: “Don't answer! Don't turn toward the voice!”", vi: "Trưởng nhóm bỗng sực nhớ lại lời cảnh báo của dân làng. Cậu hét lên: “Đừng trả lời! Đừng quay về phía tiếng gọi!”" },
+                            { en: "The group immediately began to run. The voices behind them grew closer and closer. What started as a single voice... became many voices. Each one called a different person's name.", vi: "Cả nhóm lập tức bắt đầu chạy. Những tiếng gọi phía sau họ ngày càng gần hơn. Từ một giọng nói duy nhất... đã trở thành nhiều giọng nói. Mỗi tiếng gọi tên một người khác nhau." },
+                            { en: "At first, the voices sounded gentle. Then they slowly became distorted. Hoarse. Filled with hatred. In the end, only four students escaped from the field.", vi: "Lúc đầu, những giọng nói nghe có vẻ nhẹ nhàng. Rồi chúng dần trở nên méo mó. Khàn khàn. Tràn đầy thù hận. Cuối cùng, chỉ có bốn sinh viên thoát khỏi cánh đồng." },
+                            { en: "The fifth student disappeared. The villagers searched for him for three days, but they found no trace of him.", vi: "Người sinh viên thứ năm đã biến mất. Dân làng đã tìm kiếm cậu suốt ba ngày trời, nhưng không hề thấy một dấu vết nào của cậu." },
+                            { en: "One week later, just as the sun was setting, someone saw him again. He was still standing in the middle of the field. His clothes were perfectly clean. His face looked completely calm. He simply stood there. Without speaking. Without moving.", vi: "Một tuần sau, ngay khi mặt trời vừa lặn, có người lại nhìn thấy cậu. Cậu vẫn đang đứng trân trân ở giữa cánh đồng. Quần áo của cậu sạch sẽ tinh tươm. Gương mặt cậu trông hoàn toàn bình thản. Cậu chỉ đứng yên ở đó. Không nói một lời. Không hề nhúc nhích." },
+                            { en: "That night, the villagers carried lanterns into the field and called his name. The moment he heard his name, he slowly turned around.", vi: "Đêm đó, dân làng xách theo đèn lồng tiến vào cánh đồng và gọi tên cậu. Khoảnh khắc cậu nghe thấy tên mình, cậu chậm rãi quay lại." },
+                            { en: "But that face was no longer the face of a human being. The village elder quietly led everyone away. His voice trembled as he said: “That is no longer him. The moment he answered the voice in the field... something else came back wearing his name.”", vi: "Nhưng gương mặt đó đã không còn là gương mặt của một con người nữa rồi. Trưởng lão trong làng lặng lẽ dẫn mọi người rời đi. Giọng ông run rẩy khi nói: “Đó không còn là cậu ấy nữa. Khoảnh khắc cậu ấy đáp lại tiếng gọi trên cánh đồng... một thứ gì đó khác đã trở về và mang theo cái tên của cậu ấy.”" }
+                        ],
+                        messageEn: "Respect the ancient rules established by those who came before us. Some calls are not meant to be answered, for they belong to entities seeking to wear your identity.",
+                        messageVi: "Hãy luôn kính sợ và tôn trọng những lời răn của người đi trước. Có những tiếng gọi tuyệt đối không được đáp lại, bởi chúng thuộc về những thứ muốn đoạt lấy danh tính và thân xác của bạn.",
+                        vocabulary: [
+                            { en: "Elders", vi: "Các bậc tiền bối, cao niên", partOfSpeech: "noun", example: "The elders in my village warned us." },
+                            { en: "Harvest", vi: "Mùa gặt, vụ thu hoạch", partOfSpeech: "noun", example: "During the rice harvest, five farmers disappeared." },
+                            { en: "Folklore", vi: "Văn hóa dân gian, huyền thoại truyền miệng", partOfSpeech: "noun", example: "They filmed a documentary about local folklore." },
+                            { en: "Distorted", vi: "Méo mó, biến dạng giọng nói", partOfSpeech: "adjective", example: "The gentle voices slowly became distorted." }
+                        ],
+                        quiz: {
+                            question: "Điều khủng khiếp gì xảy ra với người sinh viên thứ năm khi dân làng tìm thấy và gọi tên anh ta?",
+                            options: [
+                                "Anh ta ngã quỵ xuống đất và biến thành sương mù.",
+                                "Anh ta quay mặt lại nhưng gương mặt không còn là của con người, một thực thể khác đã cướp đoạt danh tính anh ta.",
+                                "Anh ta vui mừng chạy lại ôm chầm lấy dân làng cứu mạng.",
+                                "Anh ta hoàn toàn không nghe thấy và tiếp tục đi bộ vô định."
+                            ],
+                            correctAnswer: 1,
+                            explanation: "Khi nghe gọi tên, anh ta quay lại nhưng trưởng lão nhận ra đó không còn là anh ta nữa. Khoảnh khắc đáp lời trước đó, một thế lực tà ác đã giả dạng và mang danh tính của anh ta trở về."
+                        }
+                    },
+                    {
+                        category: "Kỳ bí & Cuốn hút",
+                        titleEn: "THE SOUL-GUIDING LANTERN",
+                        titleVi: "ĐÈN DẪN HỒN",
+                        illustrationTitle: "Ngọn đèn lam quỷ dị",
+                        illustrationDesc: "Ngọn đèn dầu cổ xưa rực sáng ngọn lửa xanh lam quỷ dị giữa làn sương mù sâu thẳm của khu rừng tâm linh.",
+                        illustration: `<svg viewBox="0 0 100 100" class="w-full h-full text-rose-500" fill="none" stroke="currentColor" stroke-width="2"><path d="M40 30h20v40H40z" fill="none"/><path d="M35 70h30M50 30V15" stroke-linecap="round"/><circle cx="50" cy="50" r="10" fill="currentColor" class="animate-ping" stroke-width="1"/><path d="M45 50c0-5 5-10 5-10s5 5 5 10c0 5-5 5-5 5s-5 0-5-5" fill="#3B82F6"/></svg>`,
+                        paragraphs: [
+                            { en: "Many years ago, in a village at the foot of a mountain, a young boy named An suddenly disappeared while gathering medicinal herbs in the forest.", vi: "Nhiều năm trước, tại một ngôi làng dưới chân núi, một cậu bé tên An bỗng dưng biến mất khi đang hái thảo dược trong rừng." },
+                            { en: "The villagers searched for him for seven days and seven nights, but they could not find a single trace of him. Everyone believed that he was dead. Only his older sister, Linh, refused to give up hope.", vi: "Dân làng đã tìm kiếm cậu suốt bảy ngày bảy đêm, nhưng không tìm thấy bất kỳ dấu vết nào của cậu. Mọi người đều tin rằng cậu đã chết. Chỉ có chị gái cậu, Linh, là không chịu từ bỏ hy vọng." },
+                            { en: "She heard about an old Taoist master who lived on the mountain and was said to understand the balance between the world of the living and the world of spirits.", vi: "Cô nghe nói có một vị đạo sĩ già sống trên núi, được đồn là hiểu rõ sự cân bằng giữa thế giới của người sống và thế giới của các linh hồn." },
+                            { en: "She climbed the mountain and begged him for help. After listening to her story, the Taoist master opened an old wooden chest and took out a small oil lantern that had darkened with age.", vi: "Cô leo lên núi và van xin ông giúp đỡ. Sau khi nghe câu chuyện của cô, vị đạo sĩ mở một chiếc rương gỗ cũ và lấy ra một chiếc đèn dầu nhỏ đã ngả màu theo thời gian." },
+                            { en: "He said: “This is the Soul-Guiding Lantern. It does not light the way for the living. It only reveals the path to where a lost soul remains trapped.”", vi: "Ông nói: “Đây là Ngọn Đèn Dẫn Hồn. Nó không chiếu sáng con đường cho người sống. Nó chỉ hé lộ lối đi đến nơi linh hồn lạc lối vẫn còn bị mắc kẹt.”" },
+                            { en: "Linh held the lantern tightly and asked whether her brother was still alive. The Taoist master did not answer. Instead, he lit the lantern and gave her a serious warning.", vi: "Linh ôm chặt chiếc đèn và hỏi liệu em trai cô có còn sống hay không. Vị đạo sĩ không trả lời. Thay vào đó, ông thắp sáng chiếc đèn và đưa ra một lời cảnh báo nghiêm khắc." },
+                            { en: "“As long as the flame is yellow, we are still walking in the world of the living.”", vi: "“Chừng nào ngọn lửa còn màu vàng, chúng ta vẫn đang đi trong thế giới của người sống.”" },
+                            { en: "“If the flame turns blue, you must never look back, no matter what you hear or whom you see.”", vi: "“Nếu ngọn lửa chuyển sang màu xanh, con tuyệt đối không được ngoái lại, dù nghe thấy gì hay nhìn thấy ai đi chăng nữa.”" },
+                            { en: "“If you look back... you will never truly return.” Linh nodded.", vi: "“Nếu con ngoái lại... con sẽ không bao giờ thực sự trở về nữa.” Linh gật đầu." },
+                            { en: "That night, they entered the forest where An had disappeared. At first, the lantern burned with a soft yellow flame. Everything was silent. Only the wind whispered through the trees.", vi: "Đêm đó, họ bước vào khu rừng nơi An đã biến mất. Ban đầu, chiếc đèn lồng cháy với ngọn lửa màu vàng dịu. Mọi thứ đều im lặng. Chỉ có tiếng gió thì thầm qua những hàng cây." },
+                            { en: "After nearly an hour of walking, the forest began to change. A thick mist covered the path. The air became so cold that every breath turned into white vapor.", vi: "Sau gần một giờ đi bộ, khu rừng bắt đầu thay đổi. Một làn sương mù dày đặc bao phủ lối đi. Không khí trở nên lạnh lẽo đến mức mỗi hơi thở đều hóa thành làn hơi trắng." },
+                            { en: "Then the flame slowly changed to a pale blue. The Taoist master stopped walking at once. In a quiet voice, he said: “They have noticed us.”", vi: "Rồi ngọn lửa từ từ chuyển sang màu xanh nhạt. Vị đạo sĩ lập tức dừng bước. Bằng một giọng trầm tĩnh, ông nói: “Họ đã phát hiện ra chúng ta.”" },
+                            { en: "The moment he finished speaking, Linh heard footsteps behind them. Not one pair of footsteps. But many. They were slow. Steady. As if an entire group was silently following them.", vi: "Ngay khi ông vừa dứt lời, Linh nghe thấy tiếng bước chân phía sau họ. Không phải một đôi bước chân. Mà là rất nhiều. Chúng thật chậm rãi. Đều đặn. Như thể có cả một nhóm người đang âm thầm bám theo họ." },
+                            { en: "Linh struggled to keep looking forward. Then she heard a familiar voice: “Big sister...” It was An's voice. It sounded exactly the same as it had before he disappeared. Tears filled Linh's eyes.", vi: "Linh đã cố gắng rất nhiều để tiếp tục nhìn về phía trước. Rồi cô nghe thấy một giọng nói quen thuộc: “Chị ơi...” Đó là giọng của An. Giọng nói ấy nghe y hệt như trước khi cậu mất tích. Nước mắt trào dâng trong mắt Linh." },
+                            { en: "The Taoist master continued walking and said firmly: “Do not trust any voice behind you.” But the voice came closer: “Big sister... I'm so cold... Please don't leave me behind...”", vi: "Vị đạo sĩ tiếp tục bước đi và nói một cách kiên định: “Đừng tin bất kỳ giọng nói nào ở phía sau con.” Nhưng giọng nói ấy càng lúc càng đến gần hơn: “Chị ơi... Em lạnh lắm... Xin đừng bỏ em lại...”" },
+                            { en: "Linh felt as if her heart were breaking. At last, she could not resist any longer. She turned around.", vi: "Linh cảm thấy như trái tim mình đang vỡ vụn. Cuối cùng, cô không thể kìm lòng được nữa. Cô quay người lại." },
+                            { en: "Behind her stood not only An. There were dozens of other people as well. Some wore clothing from different generations. Some still carried baskets used for gathering herbs. One woman was holding a small child in her arms.", vi: "Phía sau cô không chỉ có mình An. Mà còn có hàng chục người khác nữa. Có người mặc trang phục từ những thời đại khác nhau. Có người vẫn đang đeo chiếc giỏ dùng để hái thảo dược. Một người phụ nữ đang bế một đứa trẻ nhỏ trên tay." },
+                            { en: "Every face was unnaturally pale. Every pair of eyes was completely black. And every one of them was smiling. An stood at the front of the crowd. He slowly reached out his hand and whispered: “You came too late.”", vi: "Gương mặt ai nấy đều trắng bệch một cách bất thường. Mọi đôi mắt đều đen kịt hoàn toàn. Và tất cả họ đều đang mỉm cười. An đứng ở đầu đám đông. Cậu từ từ đưa tay ra và thì thầm: “Chị đến quá muộn rồi.”" },
+                            { en: "At that instant, the Taoist master blew out the lantern. Everything disappeared into darkness.", vi: "Ngay khoảnh khắc đó, vị đạo sĩ thổi tắt chiếc đèn lồng. Mọi thứ chìm vào màn đêm tăm tối." },
+                            { en: "When Linh opened her eyes again, dawn was breaking. They were standing safely at the edge of the forest. The Taoist master looked at her for a long moment before letting out a quiet sigh: “I have brought you back. But not all of you.”", vi: "Khi Linh mở mắt ra lần nữa, bình minh đang ló rạng. Họ đang đứng an toàn ở bìa rừng. Vị đạo sĩ nhìn cô một hồi lâu trước khi khẽ thở dài: “Ta đã đưa con trở về. Nhưng không phải là toàn vẹn con.”" },
+                            { en: "Linh looked down at the ground. In the light of the rising sun... she could no longer see her shadow. The Taoist master lowered his head: “Your soul... is still trapped inside that forest.”", vi: "Linh nhìn xuống mặt đất. Dưới ánh bình minh đang lên... cô không còn nhìn thấy bóng của mình nữa. Vị đạo sĩ cúi đầu: “Linh hồn của con... vẫn đang bị mắc kẹt bên trong khu rừng đó.”" },
+                            { en: "People say that on misty nights, if you ever see a young woman carrying an oil lantern with a blue flame as she walks into the forest, never call out to her. Because the one who turns around... will be you.", vi: "Người ta kể rằng vào những đêm đầy sương mù, nếu con có nhìn thấy một người phụ nữ trẻ mang theo chiếc đèn lồng dầu có ngọn lửa màu xanh lam khi cô ấy đi vào rừng, thì tuyệt đối đừng gọi cô ấy. Bởi vì người quay đầu lại... sẽ chính là con." }
+                        ],
+                        messageEn: "Do not violate spiritual boundaries. Even a sister's deep love cannot bypass the absolute rules of the spiritual domain. Some rules are strictly non-negotiable.",
+                        messageVi: "Tình yêu thương sâu đậm dù vĩ đại đến mấy cũng không thể phá vỡ quy luật tuyệt đối của cõi âm dương. Nhắm mắt và bước đi thẳng luôn là sự cứu rỗi duy nhất.",
+                        vocabulary: [
+                            { en: "Begged", vi: "Cầu xin, van nài khẩn thiết", partOfSpeech: "verb (past)", example: "She climbed the mountain and begged him for help." },
+                            { en: "Vapor", vi: "Hơi nước, làn hơi sương", partOfSpeech: "noun", example: "Every breath turned into white vapor." },
+                            { en: "Resist", vi: "Kìm lòng, kháng cự", partOfSpeech: "verb", example: "At last, she could not resist any longer." },
+                            { en: "Trapped", vi: "Bị mắc kẹt, giam cầm", partOfSpeech: "adjective / participle", example: "Her soul is still trapped inside that forest." }
+                        ],
+                        quiz: {
+                            question: "Điều khủng khiếp nào đã xảy ra với Linh khi cô đi ra khỏi khu rừng an toàn ở chương kết?",
+                            options: [
+                                "Em trai An đột nhiên xuất hiện và đuổi theo cô.",
+                                "Cô không còn nhìn thấy bóng của mình dưới ánh nắng, linh hồn cô đã bị xích giữ lại khu rừng.",
+                                "Ngọn đèn lồng bốc cháy dữ dội thiêu rụi khu rừng.",
+                                "Cô quên mất vị đạo sĩ và tất cả sự việc đã xảy ra."
+                            ],
+                            correctAnswer: 1,
+                            explanation: "Do không kìm nén được tình cảm và ngoái đầu nhìn lại khi lửa chuyển xanh lam, phần hồn của Linh đã vĩnh viễn bị bỏ lại cõi âm trong khu rừng, khiến cơ thể trần thế của cô mất đi cái bóng."
+                        }
+                    }
+                ],
+
+                initApp() {
+                    this.loadSavedState();
+                    if (this.speechSynth) {
+                        this.loadVoices();
+                        if (this.speechSynth.onvoiceschanged !== undefined) {
+                            this.speechSynth.onvoiceschanged = () => this.loadVoices();
+                        }
+                    }
+                    this.$nextTick(() => {
+                        lucide.createIcons();
+                    });
+                },
+
+                loadVoices() {
+                    if (!this.speechSynth) return;
+                    this.systemVoices = this.speechSynth.getVoices();
+                    
+                    if (!this.selectedVoiceEn) {
+                        const defaultEn = this.systemVoices.find(v => v.lang.startsWith('en'));
+                        if (defaultEn) this.selectedVoiceEn = defaultEn.name;
+                    }
+                    if (!this.selectedVoiceVi) {
+                        const defaultVi = this.systemVoices.find(v => v.lang.startsWith('vi'));
+                        if (defaultVi) this.selectedVoiceVi = defaultVi.name;
+                    }
+                },
+
+                getVoicesForLang(langCode) {
+                    return this.systemVoices.filter(v => v.lang.toLowerCase().startsWith(langCode));
+                },
+
+                goToPage(page) {
+                    this.currentPage = page;
+                    this.activeTab = 'read';
+                    this.vocabIndex = 0;
+                    this.cardFlipped = false;
+                    this.resetQuiz();
+                    this.stopSpeech();
+                    this.saveState();
+                    this.$nextTick(() => {
+                        lucide.createIcons();
+                    });
+                },
+
+                prevPage() {
+                    if (this.currentPage === 'cover') return;
+                    if (this.currentPage === 0) {
+                        this.goToPage('cover');
+                    } else {
+                        this.goToPage(this.currentPage - 1);
+                    }
+                },
+
+                nextPage() {
+                    if (this.currentPage === 'cover') {
+                        this.goToPage(0);
+                    } else if (this.currentPage === 9) {
+                        this.goToPage('cover');
+                    } else {
+                        this.goToPage(this.currentPage + 1);
+                    }
+                },
+
+                changeFontSize(dir) {
+                    let newSize = this.currentFontSize + dir;
+                    if (newSize >= 0 && newSize < this.fontSizes.length) {
+                        this.currentFontSize = newSize;
+                        this.saveState();
+                    }
+                },
+
+                prevVocab() {
+                    const length = this.stories[this.currentPage].vocabulary.length;
+                    this.vocabIndex = (this.vocabIndex - 1 + length) % length;
+                    this.cardFlipped = false;
+                    this.stopSpeech();
+                },
+
+                nextVocab() {
+                    const length = this.stories[this.currentPage].vocabulary.length;
+                    this.vocabIndex = (this.vocabIndex + 1) % length;
+                    this.cardFlipped = false;
+                    this.stopSpeech();
+                },
+
+                speakText(text, lang) {
+                    if (!this.speechSynth) return;
+
+                    if (this.isSpeaking && this.activeSpeechUtterance && this.activeSpeechUtterance.text === text) {
+                        this.stopSpeech();
+                        return;
+                    }
+
+                    this.stopSpeech();
+
+                    const utterance = new SpeechSynthesisUtterance(text);
+                    utterance.lang = lang === 'en' ? 'en-US' : 'vi-VN';
+                    
+                    utterance.rate = parseFloat(this.speechRate);
+                    utterance.pitch = parseFloat(this.speechPitch);
+
+                    const chosenVoiceName = lang === 'en' ? this.selectedVoiceEn : this.selectedVoiceVi;
+                    if (chosenVoiceName) {
+                        const voiceObj = this.systemVoices.find(v => v.name === chosenVoiceName);
+                        if (voiceObj) utterance.voice = voiceObj;
+                    }
+
+                    utterance.onend = () => {
+                        this.isSpeaking = false;
+                    };
+                    utterance.onerror = () => {
+                        this.isSpeaking = false;
+                    };
+
+                    this.activeSpeechUtterance = utterance;
+                    this.isSpeaking = true;
+                    this.speechSynth.speak(utterance);
+                },
+
+                stopSpeech() {
+                    if (this.speechSynth) {
+                        this.speechSynth.cancel();
+                        this.isSpeaking = false;
+                        this.activeSpeechUtterance = null;
+                    }
+                },
+
+                selectQuizOption(index) {
+                    if (this.quizSubmitted) return;
+                    this.selectedQuizOption = index;
+                    this.quizSubmitted = true;
+                },
+
+                getQuizOptionClass(index) {
+                    if (!this.quizSubmitted) {
+                        return this.selectedQuizOption === index 
+                            ? 'border-indigo-600 bg-indigo-50/50 dark:bg-indigo-950/20 text-indigo-900 dark:text-indigo-300' 
+                            : 'bg-white dark:bg-slate-800 border-gray-200 dark:border-slate-700 hover:border-gray-300 dark:hover:border-slate-600';
+                    }
+
+                    const correct = this.stories[this.currentPage].quiz.correctAnswer;
+                    if (index === correct) {
+                        return 'border-emerald-500 bg-emerald-50 dark:bg-emerald-950/20 text-emerald-900 dark:text-emerald-300';
+                    }
+                    if (this.selectedQuizOption === index && index !== correct) {
+                        return 'border-rose-500 bg-rose-50 dark:bg-rose-950/20 text-rose-900 dark:text-rose-300';
+                    }
+                    return 'bg-white dark:bg-slate-800 border-gray-100 dark:border-slate-800 opacity-60';
+                },
+
+                resetQuiz() {
+                    this.selectedQuizOption = null;
+                    this.quizSubmitted = false;
+                },
+
+                getReadingProgress() {
+                    if (this.currentPage === 'cover') return 0;
+                    return Math.round(((this.currentPage + 1) / 10) * 100);
+                },
+
+                saveState() {
+                    const state = {
+                        currentPage: this.currentPage,
+                        currentMode: this.currentMode,
+                        currentTheme: this.currentTheme,
+                        currentFontSize: this.currentFontSize,
+                        speechRate: this.speechRate,
+                        speechPitch: this.speechPitch,
+                        selectedVoiceEn: this.selectedVoiceEn,
+                        selectedVoiceVi: this.selectedVoiceVi
+                    };
+                    localStorage.setItem('song_ngu_ebook_v2_state', JSON.stringify(state));
+                },
+
+                loadSavedState() {
+                    const savedState = localStorage.getItem('song_ngu_ebook_v2_state');
+                    if (savedState) {
+                        try {
+                            const parsed = JSON.parse(savedState);
+                            if (parsed.currentPage !== undefined) this.currentPage = parsed.currentPage;
+                            if (parsed.currentMode !== undefined) this.currentMode = parsed.currentMode;
+                            if (parsed.currentTheme !== undefined) this.currentTheme = parsed.currentTheme;
+                            if (parsed.currentFontSize !== undefined) this.currentFontSize = parsed.currentFontSize;
+                            if (parsed.speechRate !== undefined) this.speechRate = parsed.speechRate;
+                            if (parsed.speechPitch !== undefined) this.speechPitch = parsed.speechPitch;
+                            if (parsed.selectedVoiceEn !== undefined) this.selectedVoiceEn = parsed.selectedVoiceEn;
+                            if (parsed.selectedVoiceVi !== undefined) this.selectedVoiceVi = parsed.selectedVoiceVi;
+                        } catch(e) {
+                            console.error("Error parsing saved state", e);
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+</body>
+</html>
