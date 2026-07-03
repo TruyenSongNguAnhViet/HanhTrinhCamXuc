@@ -415,8 +415,8 @@
 
                         </div>
 
-                        <!-- Shared Emotional Message Banner -->
-                        <div class="border-t-2 border-dashed pt-8 mt-8 border-slate-200">
+                        <!-- Shared Emotional Message Banner (chỉ hiển thị từ Chương 1 đến Chương 5) -->
+                        <div x-show="currentPage !== 'cover' && currentPage < 5" class="border-t-2 border-dashed pt-8 mt-8 border-slate-200" x-cloak>
                             <div class="bg-gradient-to-br from-indigo-50 to-emerald-50 p-6 rounded-2xl border shadow-inner space-y-4 border-slate-200">
                                 <div class="flex items-center space-x-2 text-indigo-600">
                                     <i data-lucide="heart" class="w-5 h-5 fill-indigo-600"></i>
